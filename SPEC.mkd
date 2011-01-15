@@ -1,0 +1,49 @@
+18-845 Individual Project (IP)
+
+Assigned: Wed Jan 12, 2011 
+Due: 2:30pm, Wed Feb 2, 2011
+Note: in the following, $coursedir refers to /afs/ece/class/ece845.
+Intro
+
+For this project, you will design and implement your own protocol for serving dynamic Web content. The purpose is to give you some practical context when we study the research issues.
+Description
+
+The project has three parts:
+Part I: Implement a baseline concurrent Web server in C.
+Part II: Design an efficient protocol for serving dynamic content, and then implement an optimized version of the baseline concurrent server that uses your protocol.
+Part III: Evaluate the performance of your baseline and optimized servers, characterizing the performance improvement of your new server.
+Part I: Baseline concurrent server
+
+Here are the requirements for the baseline server:
+Implements HTTP/1.0 GET requests for static and dynamic content.
+Assumes one connection per request (no persistent connections).
+Uses the CGI protocol to serve dynamic content.
+Serves HTML (.html), image (.gif and .jpg), and text (.txt) files.
+Accepts a single command-line argument: the port to listen on.
+Implements concurrency using either threads or I/O multiplexing.
+Part II: Optimized concurrent server
+
+The idea here is to improve the performance of your baseline server by replacing the standard CGI protocol with a protocol of your own design. This is entirely open-ended. Anything goes.
+There are a number of existing standards for this kind of thing, such as ISAPI (Microsoft), NSAPI (Netscape), and fast-cgi. However, I would encourage you to forget about these and start from first principles. Design something that is simple and fast. A good design is likely to include some combination of dynamic linking, threads, and code caches.
+
+Part III: Evaluation of baseline and optimized servers
+
+In this part, you will evaluate how well your baseline and optimized servers can serve dynamic content. You should report the performance of your baseline and optimized servers as server throughput (requests per second measured on the server). The goal is to convince your TA that your approach is significantly faster than CGI.
+Handin instructions
+
+Tar up the directory containing your solution in a file called "ANDREWID.tar", where ANDREWID is your Andrew login name, and copy it to $coursedir/ip/handin. You have list and insert privileges only in this directory. If you need to hand in twice, put a number after later handins, e.g., ANDREWID-1.tar, ANDREWID-2.tar, and so on.
+Evaluation
+
+Evaluation will be done by a live demo with the TA. Please arrange your demo time with the TA. The projects are open-ended and so is the evaluation. Here are the rough guidelines:
+Baseline server (35%). The goal here is just to get it working serving multiple clients concurrently.
+Optimized server (35%). The idea here is to come up with a design that attacks the biggest overheads associated with running CGI programs: fork and exec.
+Evaluation (30%). The idea here is to develop a testing infrastructure and workloads that will allow you to compare the performance of the baseline server against the optimized server. You will be demonstrating this testing infrastructure to the TA. It's your responsibility to come up with a convincing evaluation methodology and testing infrastructure.
+Sources of information
+
+Students in a graduate class are expected to debug their own programs. Your instructors are delighted to discuss design issues with you, but please don't ask them to debug your programs.
+The 15-213 textbook, known as the CS:APP2e book, contains all of the programming information that you need to complete the project, covering dynamic linking, process control, Unix signals, Unix I/O, network programming, and application-level concurrency and synchronization. The E&S Library in Wean Hall has a copy on reserve.
+Numerous code examples, including the csapp.c and csapp.h files, and the Tiny Web server, are available from the CS:APP Student Web Site.
+Refer to the HTTP 1.0 specification for questions about HTTP.
+Volume 1 of Stevens is also an excellent reference for advanced topics in sockets programming.
+Use telnet as the client to debug your server.
+
