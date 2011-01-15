@@ -1,21 +1,22 @@
 /* simple libev-based http server */
+#include <ev.h>
 #include <log4c.h>
 
 #include "csapp.h"
+#include "http.h"
+#include "util.h"
 
 static log4c_category_t* logger = NULL;
 
 void doit(int fd);
 void read_requesthdrs(rio_t *rp);
-int parse_uri(char *uri, char *filename, char *cgiargs);
 void serve_static(int fd, char *filename, int filesize);
 void get_filetype(char *filename, char *filetype);
 void serve_dynamic(int fd, char *filename, char *cgiargs);
 void clienterror(int fd, char *cause, char *errnum,
          char *shortmsg, char *longmsg);
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     int listenfd, connfd, port, clientlen;
     struct sockaddr_in clientaddr;
 
@@ -37,7 +38,7 @@ int main(int argc, char **argv)
     while (1) {
         clientlen = sizeof(clientaddr);
         connfd = csapp_accept(listenfd, (SA *)&clientaddr,
-						(socklen_t*)&clientlen);
+                        (socklen_t*)&clientlen);
         doit(connfd);
         csapp_close(connfd);
     }
@@ -46,13 +47,9 @@ int main(int argc, char **argv)
 /*
  * doit - handle one HTTP request/response transaction
  */
-/* $begin doit */
-void doit(int fd)
-{
-    int is_static;
+void doit(int fd) {
     struct stat sbuf;
     char buf[MAXLINE], method[MAXLINE], uri[MAXLINE], version[MAXLINE];
-    char filename[MAXLINE], cgiargs[MAXLINE];
     rio_t rio;
 
     /* Read request line and headers */
@@ -67,37 +64,34 @@ void doit(int fd)
     read_requesthdrs(&rio);                             
 
     /* Parse URI from GET request */
-    is_static = parse_uri(uri, filename, cgiargs);       
-    if (stat(filename, &sbuf) < 0) {                     
-    clienterror(fd, filename, "404", "Not found",
-            "Tiny couldn't find this file");
-    return;
+    http_uri parsed_uri = parse_http_uri(uri);
+    if (stat(parsed_uri.path, &sbuf) < 0) {                     
+        clienterror(fd, parsed_uri.path, "404", "Not found",
+                "Tiny couldn't find this file");
+        return;
     }                                                    
 
-    if (is_static) { /* Serve static content */
-    if (!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) { 
-        clienterror(fd, filename, "403", "Forbidden",
-            "Tiny couldn't read the file");
-        return;
-    }
-    serve_static(fd, filename, sbuf.st_size);        
-    }
-    else { /* Serve dynamic content */
-    if (!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) { 
-        clienterror(fd, filename, "403", "Forbidden",
-            "Tiny couldn't run the CGI program");
-        return;
-    }
-    serve_dynamic(fd, filename, cgiargs);            
+    if (parsed_uri.is_dynamic) { /* Serve dynamic content */
+        if (!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) { 
+            clienterror(fd, parsed_uri.path, "403", "Forbidden",
+                "Tiny couldn't run the CGI program");
+            return;
+        }
+        serve_dynamic(fd, parsed_uri.path, parsed_uri.query_string);            
+    } else { /* Serve static content */
+        if (!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) { 
+            clienterror(fd, parsed_uri.path, "403", "Forbidden",
+                "Tiny couldn't read the file");
+            return;
+        }
+        serve_static(fd, parsed_uri.path, sbuf.st_size);        
     }
 }
 
 /*
  * read_requesthdrs - read and parse HTTP request headers
  */
-/* $begin read_requesthdrs */
-void read_requesthdrs(rio_t *rp)
-{
+void read_requesthdrs(rio_t *rp) {
     char buf[MAXLINE];
 
     csapp_rio_readlineb(rp, buf, MAXLINE);
@@ -109,42 +103,9 @@ void read_requesthdrs(rio_t *rp)
 }
 
 /*
- * parse_uri - parse URI into filename and CGI args
- *             return 0 if dynamic content, 1 if static
- */
-/* $begin parse_uri */
-int parse_uri(char *uri, char *filename, char *cgiargs)
-{
-    char *ptr;
-
-    if (!strstr(uri, "cgi-bin")) {  /* Static content */ 
-    strcpy(cgiargs, "");                             
-    strcpy(filename, ".");                           
-    strcat(filename, uri);                           
-    if (uri[strlen(uri)-1] == '/')                   
-        strcat(filename, "home.html");               
-    return 1;
-    }
-    else {  /* Dynamic content */                        
-    ptr = index(uri, '?');                           
-    if (ptr) {
-        strcpy(cgiargs, ptr+1);
-        *ptr = '\0';
-    }
-    else
-        strcpy(cgiargs, "");                        
-    strcpy(filename, ".");                           
-    strcat(filename, uri);                           
-    return 0;
-    }
-}
-
-/*
  * serve_static - copy a file back to the client
  */
-/* $begin serve_static */
-void serve_static(int fd, char *filename, int filesize)
-{
+void serve_static(int fd, char *filename, int filesize) {
     int srcfd;
     char *srcp, filetype[MAXLINE], buf[MAXBUF];
 
@@ -165,26 +126,9 @@ void serve_static(int fd, char *filename, int filesize)
 }
 
 /*
- * get_filetype - derive file type from file name
- */
-void get_filetype(char *filename, char *filetype)
-{
-    if (strstr(filename, ".html"))
-    strcpy(filetype, "text/html");
-    else if (strstr(filename, ".gif"))
-    strcpy(filetype, "image/gif");
-    else if (strstr(filename, ".jpg"))
-    strcpy(filetype, "image/jpeg");
-    else
-    strcpy(filetype, "text/plain");
-}
-
-/*
  * serve_dynamic - run a CGI program on behalf of the client
  */
-/* $begin serve_dynamic */
-void serve_dynamic(int fd, char *filename, char *cgiargs)
-{
+void serve_dynamic(int fd, char *filename, char *cgiargs) {
     char buf[MAXLINE], *emptylist[] = { NULL };
 
     /* Return first part of HTTP response */
@@ -205,7 +149,6 @@ void serve_dynamic(int fd, char *filename, char *cgiargs)
 /*
  * clienterror - returns an error message to the client
  */
-/* $begin clienterror */
 void clienterror(int fd, char *cause, char *errnum,
          char *shortmsg, char *longmsg) {
     char buf[MAXLINE], body[MAXBUF];

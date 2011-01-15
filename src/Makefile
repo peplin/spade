@@ -5,7 +5,7 @@ LDFLAGS = -lpthread -lev -llog4c
 
 all: dirt
 
-dirt: dirt.c csapp.o
+dirt: dirt.c csapp.o http.o util.o
 
 clean:
 	rm -f *.o dirt *~

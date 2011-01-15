@@ -6,6 +6,11 @@ dirt - a tiny concurrent web server for dynamic content
 * libev
 * libpthread
 * log4c
+* check
+
+To install everything in Ubuntu:
+
+    $ sudo apt-get install libev-dev liblog4c-dev check
 
 ## Acknowledgements
 
