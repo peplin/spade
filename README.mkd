@@ -1,0 +1,15 @@
+dirt - a tiny concurrent web server for dynamic content
+========================================================
+
+## Dependencies
+
+* libev
+
+## Acknowledgements
+
+This web server was initially based on Dave O'Hallaron's Tiny Web server,
+created at Carnegie Mellon University. It also uses the same csapp library of
+functions as Tiny.
+
+The specification for this web server is also provided by Professor O'Hallaron,
+through the "Internet Services" course at CMU (18-845).

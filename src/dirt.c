@@ -25,10 +25,11 @@ int main(int argc, char **argv)
     }
     port = atoi(argv[1]);
 
-    listenfd = Open_listenfd(port);
+    listenfd = csapp_open_listenfd(port);
     while (1) {
         clientlen = sizeof(clientaddr);
-        connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen);
+        connfd = csapp_accept(listenfd, (SA *)&clientaddr,
+						(socklen_t*)&clientlen);
         doit(connfd);
         csapp_close(connfd);
     }
@@ -152,8 +153,8 @@ void serve_static(int fd, char *filename, int filesize)
     csapp_rio_writen(fd, buf, strlen(buf));       
 
     /* Send response body to client */
-    srcfd = Open(filename, O_RDONLY, 0);    
-    srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
+    srcfd = csapp_open(filename, O_RDONLY, 0);    
+    srcp = csapp_mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
     csapp_close(srcfd);                           
     csapp_rio_writen(fd, srcp, filesize);         
     csapp_munmap(srcp, filesize);                 
@@ -189,7 +190,7 @@ void serve_dynamic(int fd, char *filename, char *cgiargs)
     sprintf(buf, "Server: Tiny Web Server\r\n");
     csapp_rio_writen(fd, buf, strlen(buf));
 
-    if (Fork() == 0) { /* child */ 
+    if (csapp_fork() == 0) { /* child */ 
     /* Real server would set all CGI vars here */
     setenv("QUERY_STRING", cgiargs, 1); 
     csapp_dup2(fd, STDOUT_FILENO);         /* Redirect stdout to client */ 
