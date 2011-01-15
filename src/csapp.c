@@ -781,7 +781,7 @@ int open_listenfd(int port)
 
     /* Make it a listening socket ready to accept connection requests */
     if (listen(listenfd, LISTENQ) < 0)
-	return -1;
+        return -1;
     return listenfd;
 }
 /* $end open_listenfd */

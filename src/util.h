@@ -12,6 +12,11 @@
  * util.h/.c, general utility methods
  */
 
+/* Returns the max of two comparable values */
+#define MAX(a,b) (((a) > (b)) ? (a) : (b))
+/* Returns the min of two comparable values */
+#define MIN(a,b) (((a) > (b)) ? (b) : (a))
+
 /* Using the mutex, does an atomic printf so output is never interleaved */
 void atomic_printf(pthread_mutex_t* mutex, char* format, ...);
 
