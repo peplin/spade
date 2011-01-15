@@ -37,7 +37,7 @@ void app_error(char *msg) /* application error */
  ********************************************/
 
 /* $begin forkwrapper */
-pid_t Fork(void) 
+pid_t csapp_fork(void) 
 {
     pid_t pid;
 
@@ -47,14 +47,14 @@ pid_t Fork(void)
 }
 /* $end forkwrapper */
 
-void Execve(const char *filename, char *const argv[], char *const envp[]) 
+void csapp_execve(const char *filename, char *const argv[], char *const envp[]) 
 {
     if (execve(filename, argv, envp) < 0)
 	unix_error("Execve error");
 }
 
 /* $begin wait */
-pid_t Wait(int *status) 
+pid_t csapp_wait(int *status) 
 {
     pid_t pid;
 
@@ -64,7 +64,7 @@ pid_t Wait(int *status)
 }
 /* $end wait */
 
-pid_t Waitpid(pid_t pid, int *iptr, int options) 
+pid_t csapp_waitpid(pid_t pid, int *iptr, int options) 
 {
     pid_t retpid;
 
@@ -74,7 +74,7 @@ pid_t Waitpid(pid_t pid, int *iptr, int options)
 }
 
 /* $begin kill */
-void Kill(pid_t pid, int signum) 
+void csapp_kill(pid_t pid, int signum) 
 {
     int rc;
 
@@ -83,13 +83,13 @@ void Kill(pid_t pid, int signum)
 }
 /* $end kill */
 
-void Pause() 
+void csapp_pause() 
 {
     (void)pause();
     return;
 }
 
-unsigned int Sleep(unsigned int secs) 
+unsigned int csapp_sleep(unsigned int secs) 
 {
     unsigned int rc;
 
@@ -98,11 +98,11 @@ unsigned int Sleep(unsigned int secs)
     return rc;
 }
 
-unsigned int Alarm(unsigned int seconds) {
+unsigned int csapp_alarm(unsigned int seconds) {
     return alarm(seconds);
 }
  
-void Setpgid(pid_t pid, pid_t pgid) {
+void csapp_setpgid(pid_t pid, pid_t pgid) {
     int rc;
 
     if ((rc = setpgid(pid, pgid)) < 0)
@@ -110,7 +110,7 @@ void Setpgid(pid_t pid, pid_t pgid) {
     return;
 }
 
-pid_t Getpgrp(void) {
+pid_t csapp_getpgrp(void) {
     return getpgrp();
 }
 
@@ -119,7 +119,7 @@ pid_t Getpgrp(void) {
  ***********************************/
 
 /* $begin sigaction */
-handler_t *Signal(int signum, handler_t *handler) 
+handler_t csapp_*signal(int signum, handler_t *handler) 
 {
     struct sigaction action, old_action;
 
@@ -133,42 +133,42 @@ handler_t *Signal(int signum, handler_t *handler)
 }
 /* $end sigaction */
 
-void Sigprocmask(int how, const sigset_t *set, sigset_t *oldset)
+void csapp_sigprocmask(int how, const sigset_t *set, sigset_t *oldset)
 {
     if (sigprocmask(how, set, oldset) < 0)
 	unix_error("Sigprocmask error");
     return;
 }
 
-void Sigemptyset(sigset_t *set)
+void csapp_sigemptyset(sigset_t *set)
 {
     if (sigemptyset(set) < 0)
 	unix_error("Sigemptyset error");
     return;
 }
 
-void Sigfillset(sigset_t *set)
+void csapp_sigfillset(sigset_t *set)
 { 
     if (sigfillset(set) < 0)
 	unix_error("Sigfillset error");
     return;
 }
 
-void Sigaddset(sigset_t *set, int signum)
+void csapp_sigaddset(sigset_t *set, int signum)
 {
     if (sigaddset(set, signum) < 0)
 	unix_error("Sigaddset error");
     return;
 }
 
-void Sigdelset(sigset_t *set, int signum)
+void csapp_sigdelset(sigset_t *set, int signum)
 {
     if (sigdelset(set, signum) < 0)
 	unix_error("Sigdelset error");
     return;
 }
 
-int Sigismember(const sigset_t *set, int signum)
+int csapp_sigismember(const sigset_t *set, int signum)
 {
     int rc;
     if ((rc = sigismember(set, signum)) < 0)
@@ -181,7 +181,7 @@ int Sigismember(const sigset_t *set, int signum)
  * Wrappers for Unix I/O routines
  ********************************/
 
-int Open(const char *pathname, int flags, mode_t mode) 
+int csapp_open(const char *pathname, int flags, mode_t mode) 
 {
     int rc;
 
@@ -190,7 +190,7 @@ int Open(const char *pathname, int flags, mode_t mode)
     return rc;
 }
 
-ssize_t Read(int fd, void *buf, size_t count) 
+ssize_t csapp_read(int fd, void *buf, size_t count) 
 {
     ssize_t rc;
 
@@ -199,7 +199,7 @@ ssize_t Read(int fd, void *buf, size_t count)
     return rc;
 }
 
-ssize_t Write(int fd, const void *buf, size_t count) 
+ssize_t csapp_write(int fd, const void *buf, size_t count) 
 {
     ssize_t rc;
 
@@ -208,7 +208,7 @@ ssize_t Write(int fd, const void *buf, size_t count)
     return rc;
 }
 
-off_t Lseek(int fildes, off_t offset, int whence) 
+off_t csapp_lseek(int fildes, off_t offset, int whence) 
 {
     off_t rc;
 
@@ -217,7 +217,7 @@ off_t Lseek(int fildes, off_t offset, int whence)
     return rc;
 }
 
-void Close(int fd) 
+void csapp_close(int fd) 
 {
     int rc;
 
@@ -225,7 +225,7 @@ void Close(int fd)
 	unix_error("Close error");
 }
 
-int Select(int  n, fd_set *readfds, fd_set *writefds,
+int csapp_select(int  n, fd_set *readfds, fd_set *writefds,
 	   fd_set *exceptfds, struct timeval *timeout) 
 {
     int rc;
@@ -235,7 +235,7 @@ int Select(int  n, fd_set *readfds, fd_set *writefds,
     return rc;
 }
 
-int Dup2(int fd1, int fd2) 
+int csapp_dup2(int fd1, int fd2) 
 {
     int rc;
 
@@ -244,13 +244,13 @@ int Dup2(int fd1, int fd2)
     return rc;
 }
 
-void Stat(const char *filename, struct stat *buf) 
+void csapp_stat(const char *filename, struct stat *buf) 
 {
     if (stat(filename, buf) < 0)
 	unix_error("Stat error");
 }
 
-void Fstat(int fd, struct stat *buf) 
+void csapp_fstat(int fd, struct stat *buf) 
 {
     if (fstat(fd, buf) < 0)
 	unix_error("Fstat error");
@@ -259,7 +259,7 @@ void Fstat(int fd, struct stat *buf)
 /***************************************
  * Wrappers for memory mapping functions
  ***************************************/
-void *Mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset) 
+void csapp_*mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset) 
 {
     void *ptr;
 
@@ -268,7 +268,7 @@ void *Mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset)
     return(ptr);
 }
 
-void Munmap(void *start, size_t length) 
+void csapp_munmap(void *start, size_t length) 
 {
     if (munmap(start, length) < 0)
 	unix_error("munmap error");
@@ -278,7 +278,7 @@ void Munmap(void *start, size_t length)
  * Wrappers for dynamic storage allocation functions
  ***************************************************/
 
-void *Malloc(size_t size) 
+void csapp_*malloc(size_t size) 
 {
     void *p;
 
@@ -287,7 +287,7 @@ void *Malloc(size_t size)
     return p;
 }
 
-void *Realloc(void *ptr, size_t size) 
+void csapp_*realloc(void *ptr, size_t size) 
 {
     void *p;
 
@@ -296,7 +296,7 @@ void *Realloc(void *ptr, size_t size)
     return p;
 }
 
-void *Calloc(size_t nmemb, size_t size) 
+void csapp_*calloc(size_t nmemb, size_t size) 
 {
     void *p;
 
@@ -305,7 +305,7 @@ void *Calloc(size_t nmemb, size_t size)
     return p;
 }
 
-void Free(void *ptr) 
+void csapp_free(void *ptr) 
 {
     free(ptr);
 }
@@ -313,7 +313,7 @@ void Free(void *ptr)
 /******************************************
  * Wrappers for the Standard I/O functions.
  ******************************************/
-void Fclose(FILE *fp) 
+void csapp_fclose(FILE *fp) 
 {
     if (fclose(fp) != 0)
 	unix_error("Fclose error");
@@ -321,7 +321,7 @@ void Fclose(FILE *fp)
 
 FILE *Fdopen(int fd, const char *type) 
 {
-    FILE *fp;
+    csapp_fILE *fp;
 
     if ((fp = fdopen(fd, type)) == NULL)
 	unix_error("Fdopen error");
@@ -329,7 +329,7 @@ FILE *Fdopen(int fd, const char *type)
     return fp;
 }
 
-char *Fgets(char *ptr, int n, FILE *stream) 
+char csapp_*fgets(char *ptr, int n, FILE *stream) 
 {
     char *rptr;
 
@@ -341,7 +341,7 @@ char *Fgets(char *ptr, int n, FILE *stream)
 
 FILE *Fopen(const char *filename, const char *mode) 
 {
-    FILE *fp;
+    csapp_fILE *fp;
 
     if ((fp = fopen(filename, mode)) == NULL)
 	unix_error("Fopen error");
@@ -349,13 +349,13 @@ FILE *Fopen(const char *filename, const char *mode)
     return fp;
 }
 
-void Fputs(const char *ptr, FILE *stream) 
+void csapp_fputs(const char *ptr, FILE *stream) 
 {
     if (fputs(ptr, stream) == EOF)
 	unix_error("Fputs error");
 }
 
-size_t Fread(void *ptr, size_t size, size_t nmemb, FILE *stream) 
+size_t csapp_fread(void *ptr, size_t size, size_t nmemb, FILE *stream) 
 {
     size_t n;
 
@@ -364,7 +364,7 @@ size_t Fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
     return n;
 }
 
-void Fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream) 
+void csapp_fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream) 
 {
     if (fwrite(ptr, size, nmemb, stream) < nmemb)
 	unix_error("Fwrite error");
@@ -375,7 +375,7 @@ void Fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
  * Sockets interface wrappers
  ****************************/
 
-int Socket(int domain, int type, int protocol) 
+int csapp_socket(int domain, int type, int protocol) 
 {
     int rc;
 
@@ -384,7 +384,7 @@ int Socket(int domain, int type, int protocol)
     return rc;
 }
 
-void Setsockopt(int s, int level, int optname, const void *optval, int optlen) 
+void csapp_setsockopt(int s, int level, int optname, const void *optval, int optlen) 
 {
     int rc;
 
@@ -392,7 +392,7 @@ void Setsockopt(int s, int level, int optname, const void *optval, int optlen)
 	unix_error("Setsockopt error");
 }
 
-void Bind(int sockfd, struct sockaddr *my_addr, int addrlen) 
+void csapp_bind(int sockfd, struct sockaddr *my_addr, int addrlen) 
 {
     int rc;
 
@@ -400,7 +400,7 @@ void Bind(int sockfd, struct sockaddr *my_addr, int addrlen)
 	unix_error("Bind error");
 }
 
-void Listen(int s, int backlog) 
+void csapp_listen(int s, int backlog) 
 {
     int rc;
 
@@ -408,7 +408,7 @@ void Listen(int s, int backlog)
 	unix_error("Listen error");
 }
 
-int Accept(int s, struct sockaddr *addr, socklen_t *addrlen) 
+int csapp_accept(int s, struct sockaddr *addr, socklen_t *addrlen) 
 {
     int rc;
 
@@ -417,7 +417,7 @@ int Accept(int s, struct sockaddr *addr, socklen_t *addrlen)
     return rc;
 }
 
-void Connect(int sockfd, struct sockaddr *serv_addr, int addrlen) 
+void csapp_connect(int sockfd, struct sockaddr *serv_addr, int addrlen) 
 {
     int rc;
 
@@ -430,7 +430,7 @@ void Connect(int sockfd, struct sockaddr *serv_addr, int addrlen)
  ***********************/
 
 /* $begin gethostbyname */
-struct hostent *Gethostbyname(const char *name) 
+struct hostent csapp_*gethostbyname(const char *name) 
 {
     struct hostent *p;
 
@@ -440,7 +440,7 @@ struct hostent *Gethostbyname(const char *name)
 }
 /* $end gethostbyname */
 
-struct hostent *Gethostbyaddr(const char *addr, int len, int type) 
+struct hostent csapp_*gethostbyaddr(const char *addr, int len, int type) 
 {
     struct hostent *p;
 
@@ -453,7 +453,7 @@ struct hostent *Gethostbyaddr(const char *addr, int len, int type)
  * Wrappers for Pthreads thread control functions
  ************************************************/
 
-void Pthread_create(pthread_t *tidp, pthread_attr_t *attrp, 
+void csapp_pthread_create(pthread_t *tidp, pthread_attr_t *attrp, 
 		    void * (*routine)(void *), void *argp) 
 {
     int rc;
@@ -462,14 +462,14 @@ void Pthread_create(pthread_t *tidp, pthread_attr_t *attrp,
 	posix_error(rc, "Pthread_create error");
 }
 
-void Pthread_cancel(pthread_t tid) {
+void csapp_pthread_cancel(pthread_t tid) {
     int rc;
 
     if ((rc = pthread_cancel(tid)) != 0)
 	posix_error(rc, "Pthread_cancel error");
 }
 
-void Pthread_join(pthread_t tid, void **thread_return) {
+void csapp_pthread_join(pthread_t tid, void **thread_return) {
     int rc;
 
     if ((rc = pthread_join(tid, thread_return)) != 0)
@@ -477,7 +477,7 @@ void Pthread_join(pthread_t tid, void **thread_return) {
 }
 
 /* $begin detach */
-void Pthread_detach(pthread_t tid) {
+void csapp_pthread_detach(pthread_t tid) {
     int rc;
 
     if ((rc = pthread_detach(tid)) != 0)
@@ -485,15 +485,15 @@ void Pthread_detach(pthread_t tid) {
 }
 /* $end detach */
 
-void Pthread_exit(void *retval) {
+void csapp_pthread_exit(void *retval) {
     pthread_exit(retval);
 }
 
-pthread_t Pthread_self(void) {
+pthread_t csapp_pthread_self(void) {
     return pthread_self();
 }
  
-void Pthread_once(pthread_once_t *once_control, void (*init_function)()) {
+void csapp_pthread_once(pthread_once_t *once_control, void (*init_function)()) {
     pthread_once(once_control, init_function);
 }
 
@@ -501,19 +501,19 @@ void Pthread_once(pthread_once_t *once_control, void (*init_function)()) {
  * Wrappers for Posix semaphores
  *******************************/
 
-void Sem_init(sem_t *sem, int pshared, unsigned int value) 
+void csapp_sem_init(sem_t *sem, int pshared, unsigned int value) 
 {
     if (sem_init(sem, pshared, value) < 0)
 	unix_error("Sem_init error");
 }
 
-void P(sem_t *sem) 
+void csapp_p(sem_t *sem) 
 {
     if (sem_wait(sem) < 0)
 	unix_error("P error");
 }
 
-void V(sem_t *sem) 
+void csapp_v(sem_t *sem) 
 {
     if (sem_post(sem) < 0)
 	unix_error("V error");
@@ -678,7 +678,7 @@ ssize_t rio_readlineb(rio_t *rp, void *usrbuf, size_t maxlen)
 /**********************************
  * Wrappers for robust I/O routines
  **********************************/
-ssize_t Rio_readn(int fd, void *ptr, size_t nbytes) 
+ssize_t csapp_rio_readn(int fd, void *ptr, size_t nbytes) 
 {
     ssize_t n;
   
@@ -687,18 +687,18 @@ ssize_t Rio_readn(int fd, void *ptr, size_t nbytes)
     return n;
 }
 
-void Rio_writen(int fd, void *usrbuf, size_t n) 
+void csapp_rio_writen(int fd, void *usrbuf, size_t n) 
 {
     if (rio_writen(fd, usrbuf, n) != n)
 	unix_error("Rio_writen error");
 }
 
-void Rio_readinitb(rio_t *rp, int fd)
+void csapp_rio_readinitb(rio_t *rp, int fd)
 {
     rio_readinitb(rp, fd);
 } 
 
-ssize_t Rio_readnb(rio_t *rp, void *usrbuf, size_t n) 
+ssize_t csapp_rio_readnb(rio_t *rp, void *usrbuf, size_t n) 
 {
     ssize_t rc;
 
@@ -707,7 +707,7 @@ ssize_t Rio_readnb(rio_t *rp, void *usrbuf, size_t n)
     return rc;
 }
 
-ssize_t Rio_readlineb(rio_t *rp, void *usrbuf, size_t maxlen) 
+ssize_t csapp_rio_readlineb(rio_t *rp, void *usrbuf, size_t maxlen) 
 {
     ssize_t rc;
 
@@ -771,7 +771,7 @@ int open_listenfd(int port)
 	return -1;
 
     /* Listenfd will be an endpoint for all requests to port
-       on any IP address for this host */
+       on any csapp_iP address for this host */
     bzero((char *) &serveraddr, sizeof(serveraddr));
     serveraddr.sin_family = AF_INET; 
     serveraddr.sin_addr.s_addr = htonl(INADDR_ANY); 
@@ -789,7 +789,7 @@ int open_listenfd(int port)
 /******************************************
  * Wrappers for the client/server helper routines 
  ******************************************/
-int Open_clientfd(char *hostname, int port) 
+int csapp_open_clientfd(char *hostname, int port) 
 {
     int rc;
 
@@ -802,7 +802,7 @@ int Open_clientfd(char *hostname, int port)
     return rc;
 }
 
-int Open_listenfd(int port) 
+int csapp_open_listenfd(int port) 
 {
     int rc;
 

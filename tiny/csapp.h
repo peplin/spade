@@ -33,7 +33,7 @@
 
 /* Simplifies calls to bind(), connect(), and accept() */
 /* $begin sockaddrdef */
-typedef struct sockaddr SA;
+typedef struct sockaddr csapp_sA;
 /* $end sockaddrdef */
 
 /* Persistent state for the robust I/O (Rio) package */
@@ -63,84 +63,84 @@ void dns_error(char *msg);
 void app_error(char *msg);
 
 /* Process control wrappers */
-pid_t Fork(void);
-void Execve(const char *filename, char *const argv[], char *const envp[]);
-pid_t Wait(int *status);
-pid_t Waitpid(pid_t pid, int *iptr, int options);
-void Kill(pid_t pid, int signum);
-unsigned int Sleep(unsigned int secs);
-void Pause(void);
-unsigned int Alarm(unsigned int seconds);
-void Setpgid(pid_t pid, pid_t pgid);
-pid_t Getpgrp();
+pid_t csapp_fork(void);
+void csapp_execve(const char *filename, char *const argv[], char *const envp[]);
+pid_t csapp_wait(int *status);
+pid_t csapp_waitpid(pid_t pid, int *iptr, int options);
+void csapp_kill(pid_t pid, int signum);
+unsigned int csapp_sleep(unsigned int secs);
+void csapp_pause(void);
+unsigned int csapp_alarm(unsigned int seconds);
+void csapp_setpgid(pid_t pid, pid_t pgid);
+pid_t csapp_getpgrp();
 
 /* Signal wrappers */
 typedef void handler_t(int);
-handler_t *Signal(int signum, handler_t *handler);
-void Sigprocmask(int how, const sigset_t *set, sigset_t *oldset);
-void Sigemptyset(sigset_t *set);
-void Sigfillset(sigset_t *set);
-void Sigaddset(sigset_t *set, int signum);
-void Sigdelset(sigset_t *set, int signum);
-int Sigismember(const sigset_t *set, int signum);
+handler_t csapp_*signal(int signum, handler_t *handler);
+void csapp_sigprocmask(int how, const sigset_t *set, sigset_t *oldset);
+void csapp_sigemptyset(sigset_t *set);
+void csapp_sigfillset(sigset_t *set);
+void csapp_sigaddset(sigset_t *set, int signum);
+void csapp_sigdelset(sigset_t *set, int signum);
+int csapp_sigismember(const sigset_t *set, int signum);
 
 /* Unix I/O wrappers */
-int Open(const char *pathname, int flags, mode_t mode);
-ssize_t Read(int fd, void *buf, size_t count);
-ssize_t Write(int fd, const void *buf, size_t count);
-off_t Lseek(int fildes, off_t offset, int whence);
-void Close(int fd);
-int Select(int  n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, 
+int csapp_open(const char *pathname, int flags, mode_t mode);
+ssize_t csapp_read(int fd, void *buf, size_t count);
+ssize_t csapp_write(int fd, const void *buf, size_t count);
+off_t csapp_lseek(int fildes, off_t offset, int whence);
+void csapp_close(int fd);
+int csapp_select(int  n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, 
 	   struct timeval *timeout);
-int Dup2(int fd1, int fd2);
-void Stat(const char *filename, struct stat *buf);
-void Fstat(int fd, struct stat *buf) ;
+int csapp_dup2(int fd1, int fd2);
+void csapp_stat(const char *filename, struct stat *buf);
+void csapp_fstat(int fd, struct stat *buf) ;
 
 /* Memory mapping wrappers */
-void *Mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset);
-void Munmap(void *start, size_t length);
+void csapp_*mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset);
+void csapp_munmap(void *start, size_t length);
 
 /* Standard I/O wrappers */
-void Fclose(FILE *fp);
+void csapp_fclose(FILE *fp);
 FILE *Fdopen(int fd, const char *type);
-char *Fgets(char *ptr, int n, FILE *stream);
+char csapp_*fgets(char *ptr, int n, FILE *stream);
 FILE *Fopen(const char *filename, const char *mode);
-void Fputs(const char *ptr, FILE *stream);
-size_t Fread(void *ptr, size_t size, size_t nmemb, FILE *stream);
-void Fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream);
+void csapp_fputs(const char *ptr, FILE *stream);
+size_t csapp_fread(void *ptr, size_t size, size_t nmemb, FILE *stream);
+void csapp_fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream);
 
 /* Dynamic storage allocation wrappers */
-void *Malloc(size_t size);
-void *Realloc(void *ptr, size_t size);
-void *Calloc(size_t nmemb, size_t size);
-void Free(void *ptr);
+void csapp_*malloc(size_t size);
+void csapp_*realloc(void *ptr, size_t size);
+void csapp_*calloc(size_t nmemb, size_t size);
+void csapp_free(void *ptr);
 
 /* Sockets interface wrappers */
-int Socket(int domain, int type, int protocol);
-void Setsockopt(int s, int level, int optname, const void *optval, int optlen);
-void Bind(int sockfd, struct sockaddr *my_addr, int addrlen);
-void Listen(int s, int backlog);
-int Accept(int s, struct sockaddr *addr, socklen_t *addrlen);
-void Connect(int sockfd, struct sockaddr *serv_addr, int addrlen);
+int csapp_socket(int domain, int type, int protocol);
+void csapp_setsockopt(int s, int level, int optname, const void *optval, int optlen);
+void csapp_bind(int sockfd, struct sockaddr *my_addr, int addrlen);
+void csapp_listen(int s, int backlog);
+int csapp_accept(int s, struct sockaddr *addr, socklen_t *addrlen);
+void csapp_connect(int sockfd, struct sockaddr *serv_addr, int addrlen);
 
 /* DNS wrappers */
-struct hostent *Gethostbyname(const char *name);
-struct hostent *Gethostbyaddr(const char *addr, int len, int type);
+struct hostent csapp_*gethostbyname(const char *name);
+struct hostent csapp_*gethostbyaddr(const char *addr, int len, int type);
 
 /* Pthreads thread control wrappers */
-void Pthread_create(pthread_t *tidp, pthread_attr_t *attrp, 
+void csapp_pthread_create(pthread_t *tidp, pthread_attr_t *attrp, 
 		    void * (*routine)(void *), void *argp);
-void Pthread_join(pthread_t tid, void **thread_return);
-void Pthread_cancel(pthread_t tid);
-void Pthread_detach(pthread_t tid);
-void Pthread_exit(void *retval);
-pthread_t Pthread_self(void);
-void Pthread_once(pthread_once_t *once_control, void (*init_function)());
+void csapp_pthread_join(pthread_t tid, void **thread_return);
+void csapp_pthread_cancel(pthread_t tid);
+void csapp_pthread_detach(pthread_t tid);
+void csapp_pthread_exit(void *retval);
+pthread_t csapp_pthread_self(void);
+void csapp_pthread_once(pthread_once_t *once_control, void (*init_function)());
 
 /* POSIX semaphore wrappers */
-void Sem_init(sem_t *sem, int pshared, unsigned int value);
-void P(sem_t *sem);
-void V(sem_t *sem);
+void csapp_sem_init(sem_t *sem, int pshared, unsigned int value);
+void csapp_p(sem_t *sem);
+void csapp_v(sem_t *sem);
 
 /* Rio (Robust I/O) package */
 ssize_t rio_readn(int fd, void *usrbuf, size_t n);
@@ -150,19 +150,19 @@ ssize_t	rio_readnb(rio_t *rp, void *usrbuf, size_t n);
 ssize_t	rio_readlineb(rio_t *rp, void *usrbuf, size_t maxlen);
 
 /* Wrappers for Rio package */
-ssize_t Rio_readn(int fd, void *usrbuf, size_t n);
-void Rio_writen(int fd, void *usrbuf, size_t n);
-void Rio_readinitb(rio_t *rp, int fd); 
-ssize_t Rio_readnb(rio_t *rp, void *usrbuf, size_t n);
-ssize_t Rio_readlineb(rio_t *rp, void *usrbuf, size_t maxlen);
+ssize_t csapp_rio_readn(int fd, void *usrbuf, size_t n);
+void csapp_rio_writen(int fd, void *usrbuf, size_t n);
+void csapp_rio_readinitb(rio_t *rp, int fd); 
+ssize_t csapp_rio_readnb(rio_t *rp, void *usrbuf, size_t n);
+ssize_t csapp_rio_readlineb(rio_t *rp, void *usrbuf, size_t maxlen);
 
 /* Client/server helper functions */
 int open_clientfd(char *hostname, int portno);
 int open_listenfd(int portno);
 
 /* Wrappers for client/server helper functions */
-int Open_clientfd(char *hostname, int port);
-int Open_listenfd(int port); 
+int csapp_open_clientfd(char *hostname, int port);
+int csapp_open_listenfd(int port); 
 
 #endif /* __CSAPP_H__ */
 /* $end csapp.h */
