@@ -1,9 +1,9 @@
-/* $begin tinymain */
-/*
- * tiny.c - A simple, iterative HTTP/1.0 Web server that uses the
- *     GET method to serve static and dynamic content.
- */
+/* simple libev-based http server */
+#include <log4c.h>
+
 #include "csapp.h"
+
+static log4c_category_t* logger = NULL;
 
 void doit(int fd);
 void read_requesthdrs(rio_t *rp);
@@ -19,11 +19,19 @@ int main(int argc, char **argv)
     int listenfd, connfd, port, clientlen;
     struct sockaddr_in clientaddr;
 
+    if(log4c_init()) {
+        printf("log4c init failed");
+        exit(1);
+    }
+    logger = log4c_category_get("dirt");
+
     if (argc != 2) {
         fprintf(stderr, "usage: %s <port>\n", argv[0]);
         exit(1);
     }
     port = atoi(argv[1]);
+    log4c_category_log(logger, LOG4C_PRIORITY_INFO,
+            "Starting dirt web server on port %d", port);
 
     listenfd = csapp_open_listenfd(port);
     while (1) {
@@ -34,7 +42,6 @@ int main(int argc, char **argv)
         csapp_close(connfd);
     }
 }
-/* $end tinymain */
 
 /*
  * doit - handle one HTTP request/response transaction
@@ -84,7 +91,6 @@ void doit(int fd)
     serve_dynamic(fd, filename, cgiargs);            
     }
 }
-/* $end doit */
 
 /*
  * read_requesthdrs - read and parse HTTP request headers
@@ -101,7 +107,6 @@ void read_requesthdrs(rio_t *rp)
     }
     return;
 }
-/* $end read_requesthdrs */
 
 /*
  * parse_uri - parse URI into filename and CGI args
@@ -133,7 +138,6 @@ int parse_uri(char *uri, char *filename, char *cgiargs)
     return 0;
     }
 }
-/* $end parse_uri */
 
 /*
  * serve_static - copy a file back to the client
@@ -174,7 +178,6 @@ void get_filetype(char *filename, char *filetype)
     else
     strcpy(filetype, "text/plain");
 }
-/* $end serve_static */
 
 /*
  * serve_dynamic - run a CGI program on behalf of the client
@@ -198,7 +201,6 @@ void serve_dynamic(int fd, char *filename, char *cgiargs)
     }
     csapp_wait(NULL); /* Parent waits for and reaps child */
 }
-/* $end serve_dynamic */
 
 /*
  * clienterror - returns an error message to the client
@@ -224,4 +226,3 @@ void clienterror(int fd, char *cause, char *errnum,
     csapp_rio_writen(fd, buf, strlen(buf));
     csapp_rio_writen(fd, body, strlen(body));
 }
-/* $end clienterror */

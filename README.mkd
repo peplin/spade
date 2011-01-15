@@ -4,6 +4,8 @@ dirt - a tiny concurrent web server for dynamic content
 ## Dependencies
 
 * libev
+* libpthread
+* log4c
 
 ## Acknowledgements
 

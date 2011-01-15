@@ -1,7 +1,7 @@
 CC = gcc
-CFLAGS = -O2 -Wall -Werror -I src -fmessage-length=80
-LDFLAGS = -lpthread -lev
 DEBUG = -ggdb
+CFLAGS = -O2 -Wall -Werror -I src -fmessage-length=80 $(DEBUG)
+LDFLAGS = -lpthread -lev -llog4c
 
 all: dirt
 
