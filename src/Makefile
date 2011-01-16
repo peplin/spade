@@ -10,7 +10,7 @@ endif
 
 all: dirt
 
-dirt: dirt.c csapp.o http.o util.o server.o
+dirt: dirt.o csapp.o http.o util.o server.o config.o
 
 clean:
 	rm -f *.o dirt *~

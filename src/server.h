@@ -30,8 +30,7 @@ typedef struct {
  * Modifies *server.
  * Returns 0 if successful.
  */
-int initialize_server(dirt_server* server, unsigned int port,
-        char* static_file_path);
+int initialize_server(dirt_server* server);
 
 /* Main thread for proxy server. Listens on the server socket and spawns
  * threads to handle new requests. Should never return.

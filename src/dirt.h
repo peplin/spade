@@ -9,8 +9,8 @@
 #include "http.h"
 #include "util.h"
 #include "server.h"
+#include "config.h"
 
-#define DEFAULT_PORT 8080
-#define DEFAULT_STATIC_FILE_PATH "static"
+#define DEFAULT_CONFIGURATION_FILE_PATH "config/dirt.cfg"
 
 #endif // _DIRT_H_

@@ -28,18 +28,18 @@ int main(int argc, char *argv []) {
     }
 
     int c;
-    unsigned int port = DEFAULT_PORT;
-    char* static_file_path = DEFAULT_STATIC_FILE_PATH;
-    while((c = getopt(argc, argv, "h:s:p:")) != -1) {
+    unsigned int override_port = 0;
+    char* configuration_path = DEFAULT_CONFIGURATION_FILE_PATH;
+    while((c = getopt(argc, argv, "h:c:p:")) != -1) {
         switch(c) {
             case 'h':
                 print_help();
                 return 0;
             case 'p':
-                port = atoi(optarg);
+                override_port = atoi(optarg);
                 break;
-            case 's':
-                static_file_path = optarg;
+            case 'c':
+                configuration_path = optarg;
                 break;
             case '?':
                 if (optopt == 'p') {
@@ -64,7 +64,11 @@ int main(int argc, char *argv []) {
         exit(1);
     }
 
-    if(initialize_server(&global_server, port, static_file_path)) {
+    if(configure_server(&global_server, configuration_path, override_port)) {
+        printf("Unable to configure server\n");
+        exit(EXIT_FAILURE);
+    }
+    if(initialize_server(&global_server)) {
         printf("Unable to initialize server\n");
         exit(1);
     }

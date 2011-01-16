@@ -58,11 +58,7 @@ int initialize_listen_socket(dirt_server* server) {
     return 0;
 }
 
-int initialize_server(dirt_server* server, unsigned int port,
-        char* static_file_path) {
-    server->port = port;
-    strcpy(server->static_file_path, static_file_path);
-
+int initialize_server(dirt_server* server) {
     pthread_attr_init(&server->thread_attr);
     pthread_attr_setstacksize(&server->thread_attr, 1024*1024);
     pthread_attr_setdetachstate(&server->thread_attr, PTHREAD_CREATE_DETACHED);
