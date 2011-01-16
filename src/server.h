@@ -14,6 +14,7 @@
 /* Struct to hold server-wide settings and variables */
 typedef struct dirt_server {
     unsigned int port;
+    char static_file_path[MAX_PATH_LENGTH];
     int socket;
     pthread_attr_t thread_attr; /* Attributes for receive threads */
     pthread_mutex_t stdout_mutex; /* For non-interleaved output */
@@ -30,7 +31,8 @@ typedef struct {
  * Modifies *server.
  * Returns 0 if successful.
  */
-int initialize_server(dirt_server* server, unsigned int port);
+int initialize_server(dirt_server* server, unsigned int port,
+        char* static_file_path);
 
 /* Main thread for proxy server. Listens on the server socket and spawns
  * threads to handle new requests. Should never return.

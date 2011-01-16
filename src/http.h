@@ -1,6 +1,7 @@
 #ifndef _HTTP_H_
 #define _HTTP_H_
 
+#include <log4c.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -103,7 +104,7 @@ typedef struct {
     int from_cache;
     char status_reason[MAX_STATUS_MESSAGE_LENGTH];
     http_message message;
-    void* data; /* Requests don't have data since we just pass it through */
+    void* data; /* Requests don't have data since we only accept GET for now */
 } http_response;
 
 /* "Public" utility methods */

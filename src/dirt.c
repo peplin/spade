@@ -17,6 +17,7 @@ void print_help() {
     printf("Christopher Peplin, peplin@cmu.edu\n");
     printf("Options:\n");
     printf(" -p <port>   set the port for the server (default 8080)\n");
+    printf(" -s <path>   set the path to static files to serve (default ./static)\n");
     printf(" -h          display this dialogue\n");
 }
 
@@ -28,13 +29,17 @@ int main(int argc, char *argv []) {
 
     int c;
     unsigned int port = DEFAULT_PORT;
-    while((c = getopt(argc, argv, "h:p:")) != -1) {
+    char* static_file_path = DEFAULT_STATIC_FILE_PATH;
+    while((c = getopt(argc, argv, "h:s:p:")) != -1) {
         switch(c) {
             case 'h':
                 print_help();
                 return 0;
             case 'p':
                 port = atoi(optarg);
+                break;
+            case 's':
+                static_file_path = optarg;
                 break;
             case '?':
                 if (optopt == 'p') {
@@ -59,7 +64,7 @@ int main(int argc, char *argv []) {
         exit(1);
     }
 
-    if(initialize_server(&global_server, port)) {
+    if(initialize_server(&global_server, port, static_file_path)) {
         printf("Unable to initialize server\n");
         exit(1);
     }

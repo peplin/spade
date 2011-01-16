@@ -4,7 +4,8 @@ void return_client_error(int fd, char *cause, char *errnum, char *shortmsg,
         char *longmsg);
 void serve_dynamic(int fd, char *filename, char *cgiargs);
 void serve_static(int fd, char *filename, int filesize);
-void handle_get(int incoming_socket, http_request* request);
+void handle_get(dirt_server* server, int incoming_socket,
+        http_request* request);
 
 /* Initialize socket for proxy server to listen on.
  *
@@ -57,8 +58,10 @@ int initialize_listen_socket(dirt_server* server) {
     return 0;
 }
 
-int initialize_server(dirt_server* server, unsigned int port) {
+int initialize_server(dirt_server* server, unsigned int port,
+        char* static_file_path) {
     server->port = port;
+    strcpy(server->static_file_path, static_file_path);
 
     pthread_attr_init(&server->thread_attr);
     pthread_attr_setstacksize(&server->thread_attr, 1024*1024);
@@ -70,7 +73,8 @@ int initialize_server(dirt_server* server, unsigned int port) {
     }
 
     log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_INFO,
-            "Starting server on port %d", server->port);
+            "Starting server on port %d, serving files frome %s",
+            server->port, server->static_file_path);
     return 0;
 }
 
@@ -158,37 +162,40 @@ void receive(receive_args* args) {
     rio_t rio_client;
     rio_readinitb(&rio_client, args->incoming_socket);
     http_request request = read_http_request(&rio_client, args->server);
-    // TODO http_response response, *response_pointer;
     if(request.message.valid) {
         switch(request.method) {
             case HTTP_METHOD_GET:
-                handle_get(args->incoming_socket, &request);
+                handle_get(args->server, args->incoming_socket, &request);
                 break;
             default:
                 return_client_error(args->incoming_socket,
                         http_method_to_string(request.method),
                         "501",
                         "Not Implemented",
-                        "Tiny does not implement this method");
+                        "Dirt does not implement this method");
         }
     }
-    log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_DEBUG,
+    log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_TRACE,
             "closing socket %d", args->incoming_socket);
     close(args->incoming_socket);
 }
 
-void handle_get(int incoming_socket, http_request* request) {
+void handle_get(dirt_server* server, int incoming_socket,
+        http_request* request) {
     struct stat sbuf;
-    if(stat(request->uri.path, &sbuf) < 0) {                     
+    char file_path[MAX_PATH_LENGTH];
+    strcat(file_path, server->static_file_path);
+    strcat(file_path, request->uri.path);
+    if(stat(file_path, &sbuf) < 0) {                     
         return_client_error(incoming_socket, request->uri.path, "404", "Not found",
-                "Tiny couldn't find this file");
+                "Dirt couldn't find this file");
         return;
     }                                                    
 
     if(request->uri.is_dynamic) { /* Serve dynamic content */
         if(!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) { 
             return_client_error(incoming_socket, request->uri.path, "403",
-                    "Forbidden", "Tiny couldn't run the CGI program");
+                    "Forbidden", "Dirt couldn't run the CGI program");
             return;
         }
         serve_dynamic(incoming_socket, request->uri.path,
@@ -196,7 +203,7 @@ void handle_get(int incoming_socket, http_request* request) {
     } else { /* Serve static content */
         if(!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) { 
             return_client_error(incoming_socket, request->uri.path, "403",
-                    "Forbidden", "Tiny couldn't read the file");
+                    "Forbidden", "Dirt couldn't read the file");
             return;
         }
         serve_static(incoming_socket, request->uri.path, sbuf.st_size);        
@@ -241,7 +248,7 @@ void serve_static(int fd, char *filename, int filesize) {
     /* Send response headers to client */
     get_filetype(filename, filetype);       
     sprintf(buf, "HTTP/1.0 200 OK\r\n");    
-    sprintf(buf, "%s_server: Tiny Web Server\r\n", buf);
+    sprintf(buf, "%s_server: Dirt Web Server\r\n", buf);
     sprintf(buf, "%s_content-length: %d\r\n", buf, filesize);
     sprintf(buf, "%s_content-type: %s\r\n\r\n", buf, filetype);
     csapp_rio_writen(fd, buf, strlen(buf));       
@@ -263,7 +270,7 @@ void serve_dynamic(int fd, char *filename, char *cgiargs) {
     /* Return first part of HTTP response */
     sprintf(buf, "HTTP/1.0 200 OK\r\n");
     csapp_rio_writen(fd, buf, strlen(buf));
-    sprintf(buf, "Server: Tiny Web Server\r\n");
+    sprintf(buf, "Server: Dirt Web Server\r\n");
     csapp_rio_writen(fd, buf, strlen(buf));
 
     if(csapp_fork() == 0) { /* child */ 
@@ -283,11 +290,11 @@ void return_client_error(int fd, char *cause, char *errnum, char *shortmsg,
     char buf[MAXLINE], body[MAXBUF];
 
     /* Build the HTTP response body */
-    sprintf(body, "<html><title>Tiny Error</title>");
+    sprintf(body, "<html><title>Dirt Error</title>");
     sprintf(body, "%s<body bgcolor=""ffffff"">\r\n", body);
     sprintf(body, "%s%s: %s\r\n", body, errnum, shortmsg);
     sprintf(body, "%s<p>%s: %s\r\n", body, longmsg, cause);
-    sprintf(body, "%s<hr><em>The Tiny Web server</em>\r\n", body);
+    sprintf(body, "%s<hr><em>The Dirt Web server</em>\r\n", body);
 
     /* Print the HTTP response */
     sprintf(buf, "HTTP/1.0 %s %s\r\n", errnum, shortmsg);
