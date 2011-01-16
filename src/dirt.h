@@ -3,6 +3,7 @@
 
 #include <ev.h>
 #include <log4c.h>
+#include <libconfig.h>
 
 #include "csapp.h"
 #include "http.h"

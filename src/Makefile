@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -Werror -I src -fmessage-length=80
-LDFLAGS = -lpthread -lev -llog4c
+LDFLAGS = -lpthread -lev -llog4c -lconfig
 
 ifdef DEBUG
    CFLAGS += -ggdb

@@ -7,10 +7,11 @@ dirt - a tiny concurrent web server for dynamic content
 * libpthread
 * log4c
 * check
+* libconfig
 
 To install everything in Ubuntu:
 
-    $ sudo apt-get install libev-dev liblog4c-dev check
+    $ sudo apt-get install libev-dev liblog4c-dev check libconfig-dev
 
 ## Acknowledgements
 
