@@ -19,8 +19,7 @@
 
 /* Checks that the result isn't < 0 and prints the error string if it is.
  */ 
-int check_error(int result, const char* function, pthread_mutex_t* mutex,
-        int verbosity);
+int check_error(int result, const char* function, pthread_mutex_t* mutex);
 
 /*
  * get_filetype - derive file type from file name

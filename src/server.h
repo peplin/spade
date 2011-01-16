@@ -15,14 +15,6 @@
 typedef struct dirt_server {
     unsigned int port;
     int socket;
-    int echo; /* Option to echo the processed request back to client */
-    /* Verbosity:
-     * 0: No output
-     * 1: Only errors
-     * 2: Errors, requests
-     * 3: Errors, requests, responses, caching information
-     */
-    int verbosity; 
     pthread_attr_t thread_attr; /* Attributes for receive threads */
     pthread_mutex_t stdout_mutex; /* For non-interleaved output */
 } dirt_server;
@@ -33,16 +25,12 @@ typedef struct {
     dirt_server* server;
 } receive_args;
 
-/* Echo the processes request back to the client at socket. Used for testing. */
-void echo_request(http_request* request, int socket, dirt_server* server);
-
 /* Initialize dirt_server struct server with values specified.
  *
  * Modifies *server.
  * Returns 0 if successful.
  */
-int initialize_server(dirt_server* server, unsigned int port, int echo,
-        int verbosity);
+int initialize_server(dirt_server* server, unsigned int port);
 
 /* Main thread for proxy server. Listens on the server socket and spawns
  * threads to handle new requests. Should never return.
@@ -52,21 +40,5 @@ int initialize_server(dirt_server* server, unsigned int port, int echo,
 void run_server(dirt_server* server);
 
 void shutdown_server(dirt_server* server);
-
-/*
- * clienterror - returns an error message to the client
- */
-void clienterror(int fd, char *cause, char *errnum, char *shortmsg,
-        char *longmsg);
-
-/*
- * serve_dynamic - run a CGI program on behalf of the client
- */
-void serve_dynamic(int fd, char *filename, char *cgiargs);
-
-/*
- * serve_static - copy a file back to the client
- */
-void serve_static(int fd, char *filename, int filesize);
 
 #endif // _SERVER_H_

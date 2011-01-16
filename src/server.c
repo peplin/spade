@@ -1,5 +1,11 @@
 #include "server.h"
 
+void clienterror(int fd, char *cause, char *errnum, char *shortmsg,
+        char *longmsg);
+void serve_dynamic(int fd, char *filename, char *cgiargs);
+void serve_static(int fd, char *filename, int filesize);
+void handle_get(int incoming_socket, http_request* request);
+
 /* Initialize socket for proxy server to listen on.
  *
  * Modifies server->socket.
@@ -25,40 +31,34 @@ int initialize_listen_socket(dirt_server* server) {
 
     server->socket = 
         socket(serv->ai_family, serv->ai_socktype, serv->ai_protocol);
-    if(check_error(server->socket, "socket", &server->stdout_mutex,
-                server->verbosity)) {
+    if(check_error(server->socket, "socket", &server->stdout_mutex)) {
         return server->socket;
     }
 
     result = setsockopt(server->socket, SOL_SOCKET,
                             SO_REUSEADDR, &on, sizeof(on));
-    if(check_error(result, "setsockopt", &server->stdout_mutex,
-                server->verbosity)) {
+    if(check_error(result, "setsockopt", &server->stdout_mutex)) {
         freeaddrinfo(serv);
         return result;
     }
 
     result = bind(server->socket, serv->ai_addr, serv->ai_addrlen);
-    if(check_error(result, "bind", &server->stdout_mutex, server->verbosity)) {
+    if(check_error(result, "bind", &server->stdout_mutex)) {
         freeaddrinfo(serv);
         return result;
     }
     freeaddrinfo(serv);
 
     result = listen(server->socket, MAX_CONNECTION_QUEUE);
-    if(check_error(result, "listen", &server->stdout_mutex,
-            server->verbosity)) {
+    if(check_error(result, "listen", &server->stdout_mutex)) {
         return result;
     }
     
     return 0;
 }
 
-int initialize_server(dirt_server* server, unsigned int port, int echo,
-        int verbosity) {
+int initialize_server(dirt_server* server, unsigned int port) {
     server->port = port;
-    server->echo = echo;
-    server->verbosity = verbosity;
 
     pthread_attr_init(&server->thread_attr);
     pthread_attr_setstacksize(&server->thread_attr, 1024*1024);
@@ -71,10 +71,6 @@ int initialize_server(dirt_server* server, unsigned int port, int echo,
 
     log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_INFO,
             "Starting server on port %d", server->port);
-    if(server->echo) {
-        log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_DEBUG,
-                "Server is in echo mode");
-    }
     return 0;
 }
 
@@ -163,39 +159,50 @@ void receive(receive_args* args) {
     rio_readinitb(&rio_client, args->incoming_socket);
     http_request request = read_http_request(&rio_client, args->server);
     // TODO http_response response, *response_pointer;
-    struct stat sbuf;
     if(request.message.valid) {
-        if(args->server->echo) {
-            echo_request(&request, args->incoming_socket, args->server);
-        } else {
-            if(stat(request.uri.path, &sbuf) < 0) {                     
-                clienterror(args->incoming_socket, request.uri.path, "404",
-                        "Not found", "Tiny couldn't find this file");
-                return;
-            }                                                    
-
-            if(request.uri.is_dynamic) { /* Serve dynamic content */
-                if(!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) { 
-                    clienterror(args->incoming_socket, request.uri.path, "403",
-                            "Forbidden", "Tiny couldn't run the CGI program");
-                    return;
-                }
-                serve_dynamic(args->incoming_socket, request.uri.path,
-                        request.uri.query_string);            
-            } else { /* Serve static content */
-                if(!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) { 
-                    clienterror(args->incoming_socket, request.uri.path, "403",
-                            "Forbidden", "Tiny couldn't read the file");
-                    return;
-                }
-                serve_static(args->incoming_socket, request.uri.path,
-                        sbuf.st_size);        
-            }
+        switch(request.method) {
+            case HTTP_METHOD_GET:
+                handle_get(args->incoming_socket, &request);
+                break;
+            default:
+                clienterror(args->incoming_socket,
+                        http_method_to_string(request.method),
+                        "501",
+                        "Not Implemented",
+                        "Tiny does not implement this method");
         }
     }
     log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_DEBUG,
             "closing socket %d", args->incoming_socket);
     close(args->incoming_socket);
+}
+
+void handle_get(int incoming_socket, http_request* request) {
+    clienterror(incoming_socket, request->uri.path, "404",
+            "Not found", "Tiny couldn't find this file");
+    struct stat sbuf;
+    if(stat(request->uri.path, &sbuf) < 0) {                     
+        clienterror(incoming_socket, request->uri.path, "404", "Not found",
+                "Tiny couldn't find this file");
+        return;
+    }                                                    
+
+    if(request->uri.is_dynamic) { /* Serve dynamic content */
+        if(!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) { 
+            clienterror(incoming_socket, request->uri.path, "403",
+                    "Forbidden", "Tiny couldn't run the CGI program");
+            return;
+        }
+        serve_dynamic(incoming_socket, request->uri.path,
+                request->uri.query_string);            
+    } else { /* Serve static content */
+        if(!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) { 
+            clienterror(incoming_socket, request->uri.path, "403",
+                    "Forbidden", "Tiny couldn't read the file");
+            return;
+        }
+        serve_static(incoming_socket, request->uri.path, sbuf.st_size);        
+    }
 }
 
 /* Helper function for new threads */
@@ -207,22 +214,13 @@ void* receive_helper(void* args) {
     return 0;
 }
 
-void echo_request(http_request* request, int socket, dirt_server* server) {
-    char buffer[MAXBUF];
-    http_request_to_string(request, buffer);
-    log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_DEBUG,
-            "Echoing request %s", buffer);
-    send(socket, buffer, strlen(buffer), 0);
-}
-
 void run_server(dirt_server* server) {
     pthread_t receive_thread;
     signal(SIGPIPE, SIG_IGN); 
 
     while(1) {
         int message_socket = accept(server->socket, NULL, NULL);
-        if(!check_error(message_socket, "accept", &server->stdout_mutex,
-                    server->verbosity)) {
+        if(!check_error(message_socket, "accept", &server->stdout_mutex)) {
             receive_args* receive_args = malloc(sizeof(receive_args));
             receive_args->server = server;
             receive_args->incoming_socket = message_socket;
@@ -235,6 +233,9 @@ void run_server(dirt_server* server) {
 void shutdown_server(dirt_server* server) {
 }
 
+/*
+ * serve_static - copy a file back to the client
+ */
 void serve_static(int fd, char *filename, int filesize) {
     int srcfd;
     char *srcp, filetype[MAXLINE], buf[MAXBUF];
@@ -255,6 +256,9 @@ void serve_static(int fd, char *filename, int filesize) {
     csapp_munmap(srcp, filesize);                 
 }
 
+/*
+ * serve_dynamic - run a CGI program on behalf of the client
+ */
 void serve_dynamic(int fd, char *filename, char *cgiargs) {
     char buf[MAXLINE], *emptylist[] = { NULL };
 
@@ -273,6 +277,9 @@ void serve_dynamic(int fd, char *filename, char *cgiargs) {
     csapp_wait(NULL); /* Parent waits for and reaps child */
 }
 
+/*
+ * clienterror - returns an error message to the client
+ */
 void clienterror(int fd, char *cause, char *errnum, char *shortmsg,
         char *longmsg) {
     char buf[MAXLINE], body[MAXBUF];

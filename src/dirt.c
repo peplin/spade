@@ -16,9 +16,7 @@ void print_help() {
     printf("dirt - a concurrent web server\n");
     printf("Christopher Peplin, peplin@cmu.edu\n");
     printf("Options:\n");
-    printf(" -v          set verbosity level\n");
     printf(" -p <port>   set the port for the server (default 8080)\n");
-    printf(" -e          for testing, echo the request back to the client\n");
     printf(" -h          display this dialogue\n");
 }
 
@@ -29,20 +27,12 @@ int main(int argc, char *argv []) {
     }
 
     int c;
-    int echo = 0;
-    int verbosity = 0;
     unsigned int port = DEFAULT_PORT;
-    while((c = getopt(argc, argv, "hv:ep:")) != -1) {
+    while((c = getopt(argc, argv, "h:p:")) != -1) {
         switch(c) {
             case 'h':
                 print_help();
                 return 0;
-            case 'v':
-                verbosity = atoi(optarg);
-                break;
-            case 'e':
-                echo = 1;
-                break;
             case 'p':
                 port = atoi(optarg);
                 break;
@@ -68,7 +58,7 @@ int main(int argc, char *argv []) {
         exit(1);
     }
 
-    if(initialize_server(&global_server, port, echo, verbosity)) {
+    if(initialize_server(&global_server, port)) {
         printf("Unable to initialize server\n");
         exit(1);
     }
