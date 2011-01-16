@@ -2,20 +2,6 @@
 
 #include "dirt.h"
 
-/*
- * read_requesthdrs - read and parse HTTP request headers
- */
-void read_requesthdrs(rio_t *rp) {
-    char buf[MAXLINE];
-
-    csapp_rio_readlineb(rp, buf, MAXLINE);
-    while(strcmp(buf, "\r\n")) {          
-        csapp_rio_readlineb(rp, buf, MAXLINE);
-        printf("%s", buf);
-    }
-    return;
-}
-
 /* Proxy server struct is global so we can free it upon SIGINT. Nothing should
  * access this directly except free_server and main!
  */ 
