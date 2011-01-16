@@ -184,7 +184,9 @@ void handle_get(dirt_server* server, int incoming_socket,
         http_request* request) {
     struct stat sbuf;
     char file_path[MAX_PATH_LENGTH];
+    // TODO do this better.
     strcat(file_path, server->static_file_path);
+    strcat(file_path, "/");
     strcat(file_path, request->uri.path);
     if(stat(file_path, &sbuf) < 0) {                     
         return_client_error(incoming_socket, request->uri.path, "404",

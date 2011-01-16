@@ -221,19 +221,24 @@ http_uri parse_http_uri(char* uri) {
         uri = protocol_index + 3;
     }
 
-    /* Proxy expects http://hostname/... style requests */
-    int tokens = sscanf(uri,
-            "%"XSTR(MAX_HOSTNAME_LENGTH)"[^/]%"XSTR(MAX_PATH_LENGTH)"[^\r\n]", 
-            parsed_uri.host,
-            parsed_uri.path);
-    if(tokens > 0) {
+    /* Proxy expects http://hostname/path/... or /path/... style requests,
+     * and if there is no hostname we just assume it is for us since we don't do
+     * virtual hosts.
+     */ 
+    int tokens = sscanf(uri, "%"XSTR(MAX_HOSTNAME_LENGTH)"[^/]/%"XSTR(MAX_PATH_LENGTH)"[^\r\n]", 
+            parsed_uri.host, parsed_uri.path);
+    if(tokens == 0) {
+        strcpy(parsed_uri.host, "TODO THIS HOST");
+        tokens = sscanf(uri, "/%"XSTR(MAX_PATH_LENGTH)"[^\r\n]", parsed_uri.path);
+    } else {
         if((port = strchr(parsed_uri.host, ':'))) {
             *port++ = '\0';
             parsed_uri.port = atoi(port);
         }
         parsed_uri.valid = 1;
     }
-    if(tokens == 1 || parsed_uri.path[0] == '\0') {
+
+    if(parsed_uri.path[0] == '\0') {
         strncpy(parsed_uri.path, "/", 2);
     }
 
