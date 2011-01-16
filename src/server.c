@@ -1,6 +1,6 @@
 #include "server.h"
 
-void clienterror(int fd, char *cause, char *errnum, char *shortmsg,
+void return_client_error(int fd, char *cause, char *errnum, char *shortmsg,
         char *longmsg);
 void serve_dynamic(int fd, char *filename, char *cgiargs);
 void serve_static(int fd, char *filename, int filesize);
@@ -165,7 +165,7 @@ void receive(receive_args* args) {
                 handle_get(args->incoming_socket, &request);
                 break;
             default:
-                clienterror(args->incoming_socket,
+                return_client_error(args->incoming_socket,
                         http_method_to_string(request.method),
                         "501",
                         "Not Implemented",
@@ -180,14 +180,14 @@ void receive(receive_args* args) {
 void handle_get(int incoming_socket, http_request* request) {
     struct stat sbuf;
     if(stat(request->uri.path, &sbuf) < 0) {                     
-        clienterror(incoming_socket, request->uri.path, "404", "Not found",
+        return_client_error(incoming_socket, request->uri.path, "404", "Not found",
                 "Tiny couldn't find this file");
         return;
     }                                                    
 
     if(request->uri.is_dynamic) { /* Serve dynamic content */
         if(!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) { 
-            clienterror(incoming_socket, request->uri.path, "403",
+            return_client_error(incoming_socket, request->uri.path, "403",
                     "Forbidden", "Tiny couldn't run the CGI program");
             return;
         }
@@ -195,7 +195,7 @@ void handle_get(int incoming_socket, http_request* request) {
                 request->uri.query_string);            
     } else { /* Serve static content */
         if(!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) { 
-            clienterror(incoming_socket, request->uri.path, "403",
+            return_client_error(incoming_socket, request->uri.path, "403",
                     "Forbidden", "Tiny couldn't read the file");
             return;
         }
@@ -276,9 +276,9 @@ void serve_dynamic(int fd, char *filename, char *cgiargs) {
 }
 
 /*
- * clienterror - returns an error message to the client
+ * return_client_error - returns an error message to the client
  */
-void clienterror(int fd, char *cause, char *errnum, char *shortmsg,
+void return_client_error(int fd, char *cause, char *errnum, char *shortmsg,
         char *longmsg) {
     char buf[MAXLINE], body[MAXBUF];
 
