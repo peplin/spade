@@ -26,7 +26,7 @@ void free_server() {
     exit(0);
 }
 
-void printHelp() {
+void print_help() {
     printf("dirt - a concurrent web server\n");
     printf("Christopher Peplin, peplin@cmu.edu\n");
     printf("Options:\n");
@@ -46,10 +46,10 @@ int main(int argc, char *argv []) {
     int echo = 0;
     int verbosity = 0;
     unsigned int port = DEFAULT_PORT;
-    while((c = getopt(argc, argv, "hgv:ep:")) != -1) {
+    while((c = getopt(argc, argv, "hv:ep:")) != -1) {
         switch(c) {
             case 'h':
-                printHelp();
+                print_help();
                 return 0;
             case 'v':
                 verbosity = atoi(optarg);
@@ -69,10 +69,10 @@ int main(int argc, char *argv []) {
                 else
                     fprintf(stderr, "Unknown option character `\\x%x'.\n",
                             optopt);
-                printHelp();
+                print_help();
                 return 1;
             default:
-                printHelp();
+                print_help();
                 abort();
         }
     }
