@@ -187,12 +187,12 @@ void handle_get(dirt_server* server, int incoming_socket,
     strcat(file_path, server->static_file_path);
     strcat(file_path, request->uri.path);
     if(stat(file_path, &sbuf) < 0) {                     
-        return_client_error(incoming_socket, request->uri.path, "404", "Not found",
-                "Dirt couldn't find this file");
+        return_client_error(incoming_socket, request->uri.path, "404",
+                "Not found", "Dirt couldn't find this file");
         return;
     }                                                    
 
-    if(request->uri.is_dynamic) { /* Serve dynamic content */
+    if(request->uri.is_dynamic) {
         if(!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) { 
             return_client_error(incoming_socket, request->uri.path, "403",
                     "Forbidden", "Dirt couldn't run the CGI program");
@@ -200,7 +200,7 @@ void handle_get(dirt_server* server, int incoming_socket,
         }
         serve_dynamic(incoming_socket, request->uri.path,
                 request->uri.query_string);            
-    } else { /* Serve static content */
+    } else {
         if(!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) { 
             return_client_error(incoming_socket, request->uri.path, "403",
                     "Forbidden", "Dirt couldn't read the file");
