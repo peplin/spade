@@ -178,8 +178,6 @@ void receive(receive_args* args) {
 }
 
 void handle_get(int incoming_socket, http_request* request) {
-    clienterror(incoming_socket, request->uri.path, "404",
-            "Not found", "Tiny couldn't find this file");
     struct stat sbuf;
     if(stat(request->uri.path, &sbuf) < 0) {                     
         clienterror(incoming_socket, request->uri.path, "404", "Not found",
