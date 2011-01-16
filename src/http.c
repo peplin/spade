@@ -228,7 +228,6 @@ http_uri parse_http_uri(char* uri) {
     int tokens = sscanf(uri, "%"XSTR(MAX_HOSTNAME_LENGTH)"[^/]/%"XSTR(MAX_PATH_LENGTH)"[^\r\n]", 
             parsed_uri.host, parsed_uri.path);
     if(tokens == 0) {
-        strcpy(parsed_uri.host, "TODO THIS HOST");
         tokens = sscanf(uri, "/%"XSTR(MAX_PATH_LENGTH)"[^\r\n]", parsed_uri.path);
     } else {
         if((port = strchr(parsed_uri.host, ':'))) {

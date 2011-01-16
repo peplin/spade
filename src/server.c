@@ -201,7 +201,6 @@ void handle_get(dirt_server* server, int incoming_socket,
                     "Forbidden", "Dirt couldn't read the file");
             return;
         }
-        // TODO catch open errors that stem from here
         serve_static(incoming_socket, file_path, sbuf.st_size);        
     }
 }
@@ -243,7 +242,8 @@ void serve_static(int fd, char *filename, int filesize) {
 
     srcfd = open(filename, O_RDONLY, 0);    
     if(check_error(srcfd, "serve_static")) {
-        // TODO return 500
+        return_client_error(fd, strerror(errno), "500",
+                "Internal Server Error", "Dirt crashed and burned.");
         return;
     }
 

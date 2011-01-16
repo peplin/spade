@@ -4,6 +4,7 @@
 #define _GNU_SOURCE
 
 #include <log4c.h>
+#include <errno.h>
 
 #include "csapp.h"
 #include "util.h"
