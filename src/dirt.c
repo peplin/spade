@@ -21,7 +21,7 @@ void print_help() {
 }
 
 int main(int argc, char *argv []) {
-    if(argc > 7) {
+    if(argc > 4) {
         printf("Too many arguments\n");
         exit(1);
     }
@@ -37,14 +37,15 @@ int main(int argc, char *argv []) {
                 port = atoi(optarg);
                 break;
             case '?':
-                if (optopt == 'p')
+                if (optopt == 'p') {
                     fprintf(stderr, "Option -%c requires an argument.\n", 
                             optopt);
-                else if (isprint(optopt))
+                } else if (isprint(optopt)) {
                     fprintf(stderr, "Unknown option `-%c'.\n", optopt);
-                else
+                } else {
                     fprintf(stderr, "Unknown option character `\\x%x'.\n",
                             optopt);
+                }
                 print_help();
                 return 1;
             default:
