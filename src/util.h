@@ -17,11 +17,7 @@
 /* Returns the min of two comparable values */
 #define MIN(a,b) (((a) > (b)) ? (b) : (a))
 
-/* Using the mutex, does an atomic printf so output is never interleaved */
-void atomic_printf(pthread_mutex_t* mutex, char* format, ...);
-
 /* Checks that the result isn't < 0 and prints the error string if it is.
- * Uses atomic_printf for thread safe printing
  */ 
 int check_error(int result, const char* function, pthread_mutex_t* mutex,
         int verbosity);

@@ -17,11 +17,9 @@ int initialize_listen_socket(dirt_server* server) {
 
     result = getaddrinfo(NULL, port, &hints, &serv);
     if(result < 0) {
-        if(server->verbosity) {
-            atomic_printf(&server->stdout_mutex,
-                    "ERROR: getaddrinfo failed with error %d: %s\n", 
-                    result, gai_strerror(result));
-        }
+        log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_DEBUG,
+                "ERROR: getaddrinfo failed with error %d: %s", 
+                result, gai_strerror(result));
         return result;
     }
 
@@ -48,18 +46,14 @@ int initialize_listen_socket(dirt_server* server) {
     freeaddrinfo(serv);
 
     result = listen(server->socket, MAX_CONNECTION_QUEUE);
-    if(check_error(result, "listen", &server->stdout_mutex, server->verbosity)) {
+    if(check_error(result, "listen", &server->stdout_mutex,
+            server->verbosity)) {
         return result;
     }
     
     return 0;
 }
 
-/* Initialize dirt_server struct server with values specified.
- *
- * Modifies *server.
- * Returns 0 if successful.
- */
 int initialize_server(dirt_server* server, unsigned int port, int echo,
         int verbosity) {
     server->port = port;
@@ -75,12 +69,11 @@ int initialize_server(dirt_server* server, unsigned int port, int echo,
         return -1;
     }
 
-    if(verbosity > 1) {
-        atomic_printf(&server->stdout_mutex, "Starting server on port %d\n", 
-                server->port);
-    }
-    if(verbosity > 1 && server->echo) {
-        atomic_printf(&server->stdout_mutex, "Server is in echo mode\n");
+    log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_INFO,
+            "Starting server on port %d", server->port);
+    if(server->echo) {
+        log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_DEBUG,
+                "Server is in echo mode");
     }
     return 0;
 }
@@ -93,9 +86,9 @@ int initialize_server(dirt_server* server, unsigned int port, int echo,
  */
 int read_line(rio_t* rio, char* buf, dirt_server* server) {
     int bytes_read = rio_readlineb(rio, buf, MAXLINE);
-    if(server->verbosity && bytes_read > 0 && buf[bytes_read - 1] != '\n') {
-        atomic_printf(&server->stdout_mutex,
-                "HTTP request line:\n%s with length %d longer than MAXLINE %d\n", 
+    if(bytes_read > 0 && buf[bytes_read - 1] != '\n') {
+        log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_WARN,
+                "HTTP request line:\n%s with length %d longer than MAXLINE %d", 
                 buf, bytes_read, MAXLINE);
     }
     return bytes_read;
@@ -153,9 +146,8 @@ http_request read_http_request(rio_t* rio, dirt_server* server) {
     http_request request;
     request.message.valid = 0;
     if(read_line(rio, message_string, server) > 0) {
-        if(server->verbosity > 2) {
-            atomic_printf(&server->stdout_mutex, "\n%s\n", message_string);
-        }
+        log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_DEBUG,
+                "%s", message_string);
         request = parse_http_request(message_string);
         read_http_headers(rio, &request.message, server);
     }
@@ -171,21 +163,38 @@ void receive(receive_args* args) {
     rio_readinitb(&rio_client, args->incoming_socket);
     http_request request = read_http_request(&rio_client, args->server);
     // TODO http_response response, *response_pointer;
-    int destination_socket = 0;
+    struct stat sbuf;
     if(request.message.valid) {
         if(args->server->echo) {
             echo_request(&request, args->incoming_socket, args->server);
         } else {
-            // TODO generate response
+            if(stat(request.uri.path, &sbuf) < 0) {                     
+                clienterror(args->incoming_socket, request.uri.path, "404",
+                        "Not found", "Tiny couldn't find this file");
+                return;
+            }                                                    
+
+            if(request.uri.is_dynamic) { /* Serve dynamic content */
+                if(!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) { 
+                    clienterror(args->incoming_socket, request.uri.path, "403",
+                            "Forbidden", "Tiny couldn't run the CGI program");
+                    return;
+                }
+                serve_dynamic(args->incoming_socket, request.uri.path,
+                        request.uri.query_string);            
+            } else { /* Serve static content */
+                if(!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) { 
+                    clienterror(args->incoming_socket, request.uri.path, "403",
+                            "Forbidden", "Tiny couldn't read the file");
+                    return;
+                }
+                serve_static(args->incoming_socket, request.uri.path,
+                        sbuf.st_size);        
+            }
         }
     }
-    if(args->server->verbosity > 2) {
-        atomic_printf(&args->server->stdout_mutex, "\n_closing socket %d\n",
-                args->incoming_socket);
-    }
-    if(destination_socket > 0) {
-        close(destination_socket);
-    }
+    log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_DEBUG,
+            "closing socket %d", args->incoming_socket);
     close(args->incoming_socket);
 }
 
@@ -198,21 +207,14 @@ void* receive_helper(void* args) {
     return 0;
 }
 
-/* Echo the processes request back to the client at socket. Used for testing. */
 void echo_request(http_request* request, int socket, dirt_server* server) {
     char buffer[MAXBUF];
     http_request_to_string(request, buffer);
-    if(server->verbosity > 1) {
-        atomic_printf(&server->stdout_mutex, "Echoing request %s\n", buffer);
-    }
+    log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_DEBUG,
+            "Echoing request %s", buffer);
     send(socket, buffer, strlen(buffer), 0);
 }
 
-/* Main thread for proxy server. Listens on the server socket and spawns
- * threads to handle new requests. Should never return.
- *
- * Requires server to be initialized with initialize_server.
- */
 void run_server(dirt_server* server) {
     pthread_t receive_thread;
     signal(SIGPIPE, SIG_IGN); 
@@ -224,15 +226,12 @@ void run_server(dirt_server* server) {
             receive_args* receive_args = malloc(sizeof(receive_args));
             receive_args->server = server;
             receive_args->incoming_socket = message_socket;
-            pthread_create(&receive_thread, &server->thread_attr, receive_helper, 
-                    (void*) receive_args);
+            pthread_create(&receive_thread, &server->thread_attr,
+                    receive_helper, (void*) receive_args);
         } 
     }
 }
 
-/*
- * serve_static - copy a file back to the client
- */
 void serve_static(int fd, char *filename, int filesize) {
     int srcfd;
     char *srcp, filetype[MAXLINE], buf[MAXBUF];
@@ -253,9 +252,6 @@ void serve_static(int fd, char *filename, int filesize) {
     csapp_munmap(srcp, filesize);                 
 }
 
-/*
- * serve_dynamic - run a CGI program on behalf of the client
- */
 void serve_dynamic(int fd, char *filename, char *cgiargs) {
     char buf[MAXLINE], *emptylist[] = { NULL };
 
@@ -265,7 +261,7 @@ void serve_dynamic(int fd, char *filename, char *cgiargs) {
     sprintf(buf, "Server: Tiny Web Server\r\n");
     csapp_rio_writen(fd, buf, strlen(buf));
 
-    if (csapp_fork() == 0) { /* child */ 
+    if(csapp_fork() == 0) { /* child */ 
         /* Real server would set all CGI vars here */
         setenv("QUERY_STRING", cgiargs, 1); 
         csapp_dup2(fd, STDOUT_FILENO);         /* Redirect stdout to client */ 
@@ -274,11 +270,8 @@ void serve_dynamic(int fd, char *filename, char *cgiargs) {
     csapp_wait(NULL); /* Parent waits for and reaps child */
 }
 
-/*
- * clienterror - returns an error message to the client
- */
-void clienterror(int fd, char *cause, char *errnum,
-         char *shortmsg, char *longmsg) {
+void clienterror(int fd, char *cause, char *errnum, char *shortmsg,
+        char *longmsg) {
     char buf[MAXLINE], body[MAXBUF];
 
     /* Build the HTTP response body */
