@@ -32,26 +32,26 @@ int initialize_listen_socket(dirt_server* server) {
 
     server->socket = 
         socket(serv->ai_family, serv->ai_socktype, serv->ai_protocol);
-    if(check_error(server->socket, "socket", &server->stdout_mutex)) {
+    if(check_error(server->socket, "socket")) {
         return server->socket;
     }
 
     result = setsockopt(server->socket, SOL_SOCKET,
                             SO_REUSEADDR, &on, sizeof(on));
-    if(check_error(result, "setsockopt", &server->stdout_mutex)) {
+    if(check_error(result, "setsockopt")) {
         freeaddrinfo(serv);
         return result;
     }
 
     result = bind(server->socket, serv->ai_addr, serv->ai_addrlen);
-    if(check_error(result, "bind", &server->stdout_mutex)) {
+    if(check_error(result, "bind")) {
         freeaddrinfo(serv);
         return result;
     }
     freeaddrinfo(serv);
 
     result = listen(server->socket, MAX_CONNECTION_QUEUE);
-    if(check_error(result, "listen", &server->stdout_mutex)) {
+    if(check_error(result, "listen")) {
         return result;
     }
     
@@ -66,7 +66,6 @@ int initialize_server(dirt_server* server, unsigned int port,
     pthread_attr_init(&server->thread_attr);
     pthread_attr_setstacksize(&server->thread_attr, 1024*1024);
     pthread_attr_setdetachstate(&server->thread_attr, PTHREAD_CREATE_DETACHED);
-    pthread_mutex_init(&server->stdout_mutex, NULL);
 
     if(initialize_listen_socket(server)) {
         return -1;
@@ -209,7 +208,7 @@ void handle_get(dirt_server* server, int incoming_socket,
                     "Forbidden", "Dirt couldn't read the file");
             return;
         }
-        // TODO catch open errors that stem from ehre
+        // TODO catch open errors that stem from here
         serve_static(incoming_socket, file_path, sbuf.st_size);        
     }
 }
@@ -229,7 +228,7 @@ void run_server(dirt_server* server) {
 
     while(1) {
         int message_socket = accept(server->socket, NULL, NULL);
-        if(!check_error(message_socket, "accept", &server->stdout_mutex)) {
+        if(!check_error(message_socket, "accept")) {
             receive_args* receive_args = malloc(sizeof(receive_args));
             receive_args->server = server;
             receive_args->incoming_socket = message_socket;
@@ -249,6 +248,12 @@ void serve_static(int fd, char *filename, int filesize) {
     int srcfd;
     char *srcp, filetype[MAXLINE], buf[MAXBUF];
 
+    srcfd = open(filename, O_RDONLY, 0);    
+    if(check_error(srcfd, "serve_static")) {
+        // TODO return 500
+        return;
+    }
+
     /* Send response headers to client */
     get_filetype(filename, filetype);       
     sprintf(buf, "HTTP/1.0 200 OK\r\n");    
@@ -258,11 +263,12 @@ void serve_static(int fd, char *filename, int filesize) {
     csapp_rio_writen(fd, buf, strlen(buf));       
 
     /* Send response body to client */
-    srcfd = csapp_open(filename, O_RDONLY, 0);    
-    srcp = csapp_mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
-    csapp_close(srcfd);                           
-    csapp_rio_writen(fd, srcp, filesize);         
-    csapp_munmap(srcp, filesize);                 
+    srcp = mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
+    close(srcfd);                           
+    if(srcp != (void*)-1) {
+        csapp_rio_writen(fd, srcp, filesize);         
+        munmap(srcp, filesize);                 
+    }
 }
 
 /*

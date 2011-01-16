@@ -17,7 +17,6 @@ typedef struct dirt_server {
     char static_file_path[MAX_PATH_LENGTH];
     int socket;
     pthread_attr_t thread_attr; /* Attributes for receive threads */
-    pthread_mutex_t stdout_mutex; /* For non-interleaved output */
 } dirt_server;
 
 /* Arguments for spawned receiver threads */
