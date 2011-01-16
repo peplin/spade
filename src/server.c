@@ -188,6 +188,7 @@ void handle_get(dirt_server* server, int incoming_socket,
     strcat(file_path, server->static_file_path);
     strcat(file_path, "/");
     strcat(file_path, request->uri.path);
+    // TODO we need a dynamic file path too?
     if(stat(file_path, &sbuf) < 0) {                     
         return_client_error(incoming_socket, request->uri.path, "404",
                 "Not found", "Dirt couldn't find this file");
@@ -208,7 +209,8 @@ void handle_get(dirt_server* server, int incoming_socket,
                     "Forbidden", "Dirt couldn't read the file");
             return;
         }
-        serve_static(incoming_socket, request->uri.path, sbuf.st_size);        
+        // TODO catch open errors that stem from ehre
+        serve_static(incoming_socket, file_path, sbuf.st_size);        
     }
 }
 

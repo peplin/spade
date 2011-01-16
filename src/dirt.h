@@ -10,6 +10,6 @@
 #include "server.h"
 
 #define DEFAULT_PORT 8080
-#define DEFAULT_STATIC_FILE_PATH "./static"
+#define DEFAULT_STATIC_FILE_PATH "static"
 
 #endif // _DIRT_H_
