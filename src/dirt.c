@@ -81,8 +81,6 @@ int main(int argc, char *argv []) {
         printf("log4c init failed");
         exit(1);
     }
-    log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_INFO,
-            "Starting dirt web server on port %d", port);
 
     if(initialize_server(&global_server, port, echo, verbosity)) {
         printf("Unable to initialize server\n");
