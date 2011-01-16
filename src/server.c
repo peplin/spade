@@ -232,6 +232,9 @@ void run_server(dirt_server* server) {
     }
 }
 
+void shutdown_server(dirt_server* server) {
+}
+
 void serve_static(int fd, char *filename, int filesize) {
     int srcfd;
     char *srcp, filetype[MAXLINE], buf[MAXBUF];

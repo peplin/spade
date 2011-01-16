@@ -22,20 +22,18 @@ void read_requesthdrs(rio_t *rp) {
 dirt_server global_server;
 
 void free_server() {
-    // TODO shutdown server?
+    shutdown_server(&global_server);
     exit(0);
 }
 
 void printHelp() {
-    printf("15-213 proxy\n");
-    printf("Christopher Peplin, cpeplin@andrew.cmu.edu\n");
-    printf("Options\n");
+    printf("dirt - a concurrent web server\n");
+    printf("Christopher Peplin, peplin@cmu.edu\n");
+    printf("Options:\n");
     printf(" -v          set verbosity level\n");
     printf(" -p <port>   set the port for the server (default 8080)\n");
-    printf(" -g          disable caching, proxy acts as a gateway only\n");
     printf(" -e          for testing, echo the request back to the client\n");
     printf(" -h          display this dialogue\n");
-
 }
 
 int main(int argc, char *argv []) {

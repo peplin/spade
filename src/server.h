@@ -51,6 +51,8 @@ int initialize_server(dirt_server* server, unsigned int port, int echo,
  */
 void run_server(dirt_server* server);
 
+void shutdown_server(dirt_server* server);
+
 /*
  * clienterror - returns an error message to the client
  */
