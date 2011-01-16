@@ -179,10 +179,7 @@ void handle_get(dirt_server* server, int incoming_socket,
         http_request* request) {
     struct stat sbuf;
     char file_path[MAX_PATH_LENGTH];
-    // TODO do this better.
-    strcat(file_path, server->static_file_path);
-    strcat(file_path, "/");
-    strcat(file_path, request->uri.path);
+    sprintf("%s/%s", server->static_file_path, request->uri.path);
     // TODO we need a dynamic file path too?
     if(stat(file_path, &sbuf) < 0) {                     
         return_client_error(incoming_socket, request->uri.path, "404",
@@ -252,7 +249,7 @@ void serve_static(int fd, char *filename, int filesize) {
 
     /* Send response headers to client */
     get_filetype(filename, filetype);       
-    sprintf(buf, "HTTP/1.0 200 OK\r\n");    
+    
     sprintf(buf, "%s_server: Dirt Web Server\r\n", buf);
     sprintf(buf, "%s_content-length: %d\r\n", buf, filesize);
     sprintf(buf, "%s_content-type: %s\r\n\r\n", buf, filetype);
