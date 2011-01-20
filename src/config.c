@@ -26,6 +26,7 @@ int configure_server(dirt_server* server, char* configuration_path,
     configure_port(server, override_port, configuration);
     configure_static_file_path(server, configuration);
     configure_dynamic_file_path(server, configuration);
+    configure_dynamic_handlers(server, configuration);
 
     config_destroy(configuration);
     return 0;
