@@ -260,7 +260,7 @@ void register_handler(dirt_server* server, const char* path,
     struct stat sbuf;
     if(stat(file_path, &sbuf) < 0) {
         log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_ERROR,
-                "Couldn't find the handler file '%s' -- not addeding handler",
+                "Couldn't find the handler file '%s' -- not adding handler",
                 file_path);
     } else {
         if(!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) {

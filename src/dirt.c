@@ -22,7 +22,7 @@ void print_help() {
 }
 
 int main(int argc, char *argv []) {
-    if(argc > 4) {
+    if(argc > 5) {
         printf("Too many arguments\n");
         exit(1);
     }

@@ -70,7 +70,7 @@ void configure_dynamic_file_path(dirt_server* server, config_t* configuration) {
             &dynamic_file_path)) {
         strcpy(server->dynamic_file_path, dynamic_file_path);
         log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_INFO,
-                "Using static file path '%s' from configuration file",
+                "Using dynamic file path '%s' from configuration file",
                 server->dynamic_file_path);
     } else {
         strcpy(server->dynamic_file_path, DEFAULT_STATIC_FILE_PATH);
