@@ -14,10 +14,11 @@ int configure_server(dirt_server* server, char* configuration_path,
  
     if (!config_read_file(configuration, configuration_path)) {
         // TODO why are these undefined?
-        //fprintf(stderr, "%s:%d - %s\n",
-        //    config_error_file(configuration),
-        //    config_error_line(configuration),
-        //    config_error_text(configuration));
+        log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_ERROR,
+                "Configuration error: %s:%d - %s",
+                configuration_path,
+                config_error_line(configuration),
+                config_error_text(configuration));
         config_destroy(configuration);
         return(EXIT_FAILURE);
     }
@@ -92,5 +93,15 @@ void configure_dynamic_handlers(dirt_server* server, config_t* configuration) {
         config_setting_lookup_string(handler_setting, "url", &url);
 
         register_handler(server, url, handler);
+        log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_INFO,
+                "Registered handler '%s' for URL prefix '%s'", handler, url);
+    }
+    if (server->handler_count == 0) {
+        log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_INFO,
+                "No dynamic URL handlers registered");
+    } else {
+        log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_INFO,
+                "Registered a total of %d dynamic URL handlers",
+                    server->handler_count);
     }
 }
