@@ -25,12 +25,12 @@ int initialize_listen_socket(dirt_server* server) {
     result = getaddrinfo(NULL, port, &hints, &serv);
     if(result < 0) {
         log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_DEBUG,
-                "ERROR: getaddrinfo failed with error %d: %s", 
+                "ERROR: getaddrinfo failed with error %d: %s",
                 result, gai_strerror(result));
         return result;
     }
 
-    server->socket = 
+    server->socket =
         socket(serv->ai_family, serv->ai_socktype, serv->ai_protocol);
     if(check_error(server->socket, "socket")) {
         return server->socket;
@@ -54,7 +54,7 @@ int initialize_listen_socket(dirt_server* server) {
     if(check_error(result, "listen")) {
         return result;
     }
-    
+
     return 0;
 }
 
@@ -83,7 +83,7 @@ int read_line(rio_t* rio, char* buf, dirt_server* server) {
     int bytes_read = rio_readlineb(rio, buf, MAXLINE);
     if(bytes_read > 0 && buf[bytes_read - 1] != '\n') {
         log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_WARN,
-                "HTTP request line:\n%s with length %d longer than MAXLINE %d", 
+                "HTTP request line:\n%s with length %d longer than MAXLINE %d",
                 buf, bytes_read, MAXLINE);
     }
     return bytes_read;
@@ -96,12 +96,12 @@ int read_line(rio_t* rio, char* buf, dirt_server* server) {
  *
  * Modifies rio, message.
  */
-void read_http_headers(rio_t* rio, http_message* message, 
+void read_http_headers(rio_t* rio, http_message* message,
         dirt_server* server) {
     if(rio->rio_cnt) {
         char header_string[MAXLINE];
         int bytes_read = read_line(rio, header_string, server);
-        while(bytes_read > 0 && header_string[0] != '\n' 
+        while(bytes_read > 0 && header_string[0] != '\n'
                 && header_string[0] != '\r') {
             http_header header = parse_http_header(header_string);
             if(header.valid) {
@@ -115,7 +115,7 @@ void read_http_headers(rio_t* rio, http_message* message,
 /* Read the HTTP response status line from the rio buffer.
  * Returns the parsed HTTP response, which may or may not be have
  * response.valid.
- * 
+ *
  * Modifies rio.
  */
 http_response read_http_response(rio_t* rio, dirt_server* server) {
@@ -181,33 +181,33 @@ void handle_get(dirt_server* server, int incoming_socket,
     char file_path[MAX_PATH_LENGTH];
     sprintf("%s/%s", server->static_file_path, request->uri.path);
     // TODO we need a dynamic file path too?
-    if(stat(file_path, &sbuf) < 0) {                     
+    if(stat(file_path, &sbuf) < 0) {
         return_client_error(incoming_socket, request->uri.path, "404",
                 "Not found", "Dirt couldn't find this file");
         return;
-    }                                                    
+    }
 
     if(request->uri.is_dynamic) {
-        if(!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) { 
+        if(!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) {
             return_client_error(incoming_socket, request->uri.path, "403",
                     "Forbidden", "Dirt couldn't run the CGI program");
             return;
         }
         serve_dynamic(incoming_socket, request->uri.path,
-                request->uri.query_string);            
+                request->uri.query_string);
     } else {
-        if(!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) { 
+        if(!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) {
             return_client_error(incoming_socket, request->uri.path, "403",
                     "Forbidden", "Dirt couldn't read the file");
             return;
         }
-        serve_static(incoming_socket, file_path, sbuf.st_size);        
+        serve_static(incoming_socket, file_path, sbuf.st_size);
     }
 }
 
 /* Helper function for new threads */
 void* receive_helper(void* args) {
-    signal(SIGPIPE, SIG_IGN); 
+    signal(SIGPIPE, SIG_IGN);
     receive_args* arg_struct = (receive_args*) args;
     receive(arg_struct);
     free(arg_struct);
@@ -216,7 +216,7 @@ void* receive_helper(void* args) {
 
 void run_server(dirt_server* server) {
     pthread_t receive_thread;
-    signal(SIGPIPE, SIG_IGN); 
+    signal(SIGPIPE, SIG_IGN);
 
     while(1) {
         int message_socket = accept(server->socket, NULL, NULL);
@@ -226,7 +226,7 @@ void run_server(dirt_server* server) {
             receive_args->incoming_socket = message_socket;
             pthread_create(&receive_thread, &server->thread_attr,
                     receive_helper, (void*) receive_args);
-        } 
+        }
     }
 }
 
@@ -240,7 +240,7 @@ void serve_static(int fd, char *filename, int filesize) {
     int srcfd;
     char *srcp, filetype[MAXLINE], buf[MAXBUF];
 
-    srcfd = open(filename, O_RDONLY, 0);    
+    srcfd = open(filename, O_RDONLY, 0);
     if(check_error(srcfd, "serve_static")) {
         return_client_error(fd, strerror(errno), "500",
                 "Internal Server Error", "Dirt crashed and burned.");
@@ -248,19 +248,19 @@ void serve_static(int fd, char *filename, int filesize) {
     }
 
     /* Send response headers to client */
-    get_filetype(filename, filetype);       
-    
+    get_filetype(filename, filetype);
+
     sprintf(buf, "%s_server: Dirt Web Server\r\n", buf);
     sprintf(buf, "%s_content-length: %d\r\n", buf, filesize);
     sprintf(buf, "%s_content-type: %s\r\n\r\n", buf, filetype);
-    csapp_rio_writen(fd, buf, strlen(buf));       
+    csapp_rio_writen(fd, buf, strlen(buf));
 
     /* Send response body to client */
     srcp = mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
-    close(srcfd);                           
+    close(srcfd);
     if(srcp != (void*)-1) {
-        csapp_rio_writen(fd, srcp, filesize);         
-        munmap(srcp, filesize);                 
+        csapp_rio_writen(fd, srcp, filesize);
+        munmap(srcp, filesize);
     }
 }
 
@@ -276,11 +276,11 @@ void serve_dynamic(int fd, char *filename, char *cgiargs) {
     sprintf(buf, "Server: Dirt Web Server\r\n");
     csapp_rio_writen(fd, buf, strlen(buf));
 
-    if(csapp_fork() == 0) { /* child */ 
+    if(csapp_fork() == 0) { /* child */
         /* Real server would set all CGI vars here */
-        setenv("QUERY_STRING", cgiargs, 1); 
-        csapp_dup2(fd, STDOUT_FILENO);         /* Redirect stdout to client */ 
-        csapp_execve(filename, emptylist, environ); /* Run CGI program */ 
+        setenv("QUERY_STRING", cgiargs, 1);
+        csapp_dup2(fd, STDOUT_FILENO);         /* Redirect stdout to client */
+        csapp_execve(filename, emptylist, environ); /* Run CGI program */
     }
     csapp_wait(NULL); /* Parent waits for and reaps child */
 }
