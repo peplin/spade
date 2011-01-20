@@ -1,9 +1,12 @@
 #include "server.h"
 
-void return_client_error(int fd, char *cause, char *errnum, char *shortmsg,
-        char *longmsg);
-void serve_dynamic(int fd, char *filename, char *cgiargs);
-void serve_static(int fd, char *filename, int filesize);
+void return_client_error(int incoming_socket, char *cause, char* status_code,
+        char *shortmsg, char *longmsg);
+void return_response_headers(int incoming_socket, char* status_code,
+        char* message, char* body, char* content_type, int length);
+void serve_dynamic(int incoming_socket, char *filename, char *cgiargs);
+void serve_static(dirt_server* server, http_request* request,
+        int incoming_socket, char *filename, int filesize);
 void handle_get(dirt_server* server, int incoming_socket,
         http_request* request);
 
@@ -217,7 +220,7 @@ void handle_get(dirt_server* server, int incoming_socket,
                 "Forbidden", "Dirt couldn't read the file");
         return;
     }
-    serve_static(incoming_socket, file_path, sbuf.st_size);
+    serve_static(server, request, incoming_socket, file_path, sbuf.st_size);
 }
 
 /* Helper function for new threads */
@@ -276,30 +279,26 @@ void register_handler(dirt_server* server, const char* path,
 /*
  * serve_static - copy a file back to the client
  */
-void serve_static(int fd, char *filename, int filesize) {
-    int srcfd;
-    char *srcp, filetype[MAXLINE], buf[MAXBUF];
-
-    srcfd = open(filename, O_RDONLY, 0);
-    if(check_error(srcfd, "serve_static")) {
-        return_client_error(fd, strerror(errno), "500",
+void serve_static(dirt_server* server, http_request* request, 
+        int incoming_socket, char *filename, int filesize) {
+    int file_descriptor = open(filename, O_RDONLY, 0);
+    if(check_error(file_descriptor, "serve_static")) {
+        return_client_error(incoming_socket, strerror(errno), "500",
                 "Internal Server Error", "Dirt crashed and burned.");
         return;
     }
 
-    /* Send response headers to client */
+    char filetype[MAXLINE];
     get_filetype(filename, filetype);
-
-    sprintf(buf, "%s_server: Dirt Web Server\r\n", buf);
-    sprintf(buf, "%s_content-length: %d\r\n", buf, filesize);
-    sprintf(buf, "%s_content-type: %s\r\n\r\n", buf, filetype);
-    csapp_rio_writen(fd, buf, strlen(buf));
+    return_response_headers(incoming_socket, "200", "OK", NULL, filetype, 
+            filesize);
 
     /* Send response body to client */
-    srcp = mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
-    close(srcfd);
+    char *srcp;
+    srcp = mmap(0, filesize, PROT_READ, MAP_PRIVATE, file_descriptor, 0);
+    close(file_descriptor);
     if(srcp != (void*)-1) {
-        csapp_rio_writen(fd, srcp, filesize);
+        csapp_rio_writen(incoming_socket, srcp, filesize);
         munmap(srcp, filesize);
     }
 }
@@ -307,19 +306,19 @@ void serve_static(int fd, char *filename, int filesize) {
 /*
  * serve_dynamic - run a CGI program on behalf of the client
  */
-void serve_dynamic(int fd, char *filename, char *cgiargs) {
-    char buf[MAXLINE], *emptylist[] = { NULL };
+void serve_dynamic(int incoming_socket, char *filename, char *cgiargs) {
+    char *emptylist[] = { NULL };
 
+    // TODO the dynamic part should have control over the response code and
+    // headers, no?
     /* Return first part of HTTP response */
-    sprintf(buf, "HTTP/1.0 200 OK\r\n");
-    csapp_rio_writen(fd, buf, strlen(buf));
-    sprintf(buf, "Server: Dirt Web Server\r\n");
-    csapp_rio_writen(fd, buf, strlen(buf));
+    return_response_headers(incoming_socket, "200", "OK", NULL, NULL, 0);
 
     if(csapp_fork() == 0) { /* child */
         /* Real server would set all CGI vars here */
         setenv("QUERY_STRING", cgiargs, 1);
-        csapp_dup2(fd, STDOUT_FILENO);         /* Redirect stdout to client */
+        /* Redirect stdout to client */
+        csapp_dup2(incoming_socket, STDOUT_FILENO);        
         csapp_execve(filename, emptylist, environ); /* Run CGI program */
     }
     csapp_wait(NULL); /* Parent waits for and reaps child */
@@ -328,23 +327,43 @@ void serve_dynamic(int fd, char *filename, char *cgiargs) {
 /*
  * return_client_error - returns an error message to the client
  */
-void return_client_error(int fd, char *cause, char *errnum, char *shortmsg,
-        char *longmsg) {
-    char buf[MAXLINE], body[MAXBUF];
+void return_client_error(int incoming_socket, char *cause, char *status_code,
+        char *short_message, char *longmsg) {
+    char body[MAXBUF];
 
     /* Build the HTTP response body */
     sprintf(body, "<html><title>Dirt Error</title>");
     sprintf(body, "%s<body bgcolor=""ffffff"">\r\n", body);
-    sprintf(body, "%s%s: %s\r\n", body, errnum, shortmsg);
+    sprintf(body, "%s%s: %s\r\n", body, status_code, short_message);
     sprintf(body, "%s<p>%s: %s\r\n", body, longmsg, cause);
     sprintf(body, "%s<hr><em>The Dirt Web server</em>\r\n", body);
 
-    /* Print the HTTP response */
-    sprintf(buf, "HTTP/1.0 %s %s\r\n", errnum, shortmsg);
-    csapp_rio_writen(fd, buf, strlen(buf));
-    sprintf(buf, "Content-type: text/html\r\n");
-    csapp_rio_writen(fd, buf, strlen(buf));
-    sprintf(buf, "Content-length: %d\r\n\r\n", (int)strlen(body));
-    csapp_rio_writen(fd, buf, strlen(buf));
-    csapp_rio_writen(fd, body, strlen(body));
+    return_response_headers(incoming_socket, status_code, short_message, body, 
+            NULL, 0);
+}
+
+void return_response_headers(int incoming_socket, char* status_code,
+        char* message, char* body, char* content_type, int length) {
+    char buf[MAXLINE];
+
+    sprintf(buf, "HTTP/1.0 %s %s\r\n", status_code, message);
+    csapp_rio_writen(incoming_socket, buf, strlen(buf));
+
+    if(content_type) {
+        sprintf(buf, "Content-Type: %s\r\n\r\n", content_type);
+    } else {
+        sprintf(buf, "Content-Type: text/html\r\n");
+    }
+    csapp_rio_writen(incoming_socket, buf, strlen(buf));
+
+    if (body) {
+        sprintf(buf, "Content-Length: %d\r\n\r\n", (int)strlen(body));
+    } else {
+        sprintf(buf, "Content-Length: %d\r\n\r\n", length);
+    }
+    csapp_rio_writen(incoming_socket, buf, strlen(buf));
+
+    if (body) {
+        csapp_rio_writen(incoming_socket, body, strlen(body));
+    }
 }

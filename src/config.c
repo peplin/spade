@@ -1,5 +1,6 @@
 #include "config.h"
 
+void configure_hostname(dirt_server* server, config_t* configuration);
 void configure_port(dirt_server* server, unsigned int override_port,
         config_t* configuration);
 void configure_static_file_path(dirt_server* server, config_t* configuration);
@@ -23,6 +24,7 @@ int configure_server(dirt_server* server, char* configuration_path,
         return(EXIT_FAILURE);
     }
 
+    configure_hostname(server, configuration);
     configure_port(server, override_port, configuration);
     configure_static_file_path(server, configuration);
     configure_dynamic_file_path(server, configuration);
@@ -46,6 +48,20 @@ void configure_port(dirt_server* server, unsigned int override_port,
         server->port = DEFAULT_PORT;
         log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_INFO,
                 "Using default port %d", server->port);
+    }
+}
+
+void configure_hostname(dirt_server* server, config_t* configuration) {
+    const char* hostname = NULL;
+    if(config_lookup_string(configuration, "hostname", &hostname)) {
+        strcpy(server->hostname, hostname);
+        log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_INFO,
+                "Using hostname '%s' from configuration file",
+                server->hostname);
+    } else {
+        strcpy(server->hostname, DEFAULT_HOSTNAME);
+        log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_INFO,
+                "Using default hostname '%s'", server->hostname);
     }
 }
 

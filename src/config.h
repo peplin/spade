@@ -7,6 +7,7 @@
 
 #define DEFAULT_PORT 8080
 #define DEFAULT_STATIC_FILE_PATH "static"
+#define DEFAULT_HOSTNAME "dirt"
 
 int configure_server(dirt_server* server, char* configuration_path,
         unsigned int override_port);

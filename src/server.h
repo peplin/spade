@@ -27,6 +27,7 @@ typedef struct dirt_server {
     char dynamic_file_path[MAX_PATH_LENGTH];
     unsigned int handler_count;
     dynamic_handler handlers[MAX_HANDLERS];
+    char hostname[MAX_HOSTNAME_LENGTH];
     int socket;
     pthread_attr_t thread_attr; /* Attributes for receive threads */
 } dirt_server;
