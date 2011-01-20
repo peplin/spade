@@ -196,15 +196,20 @@ void handle_get(dirt_server* server, int incoming_socket,
         }
     }
 
-    if (!strcmp(request->uri.path, "/")) {
-        strcpy(request->uri.path, "index.html");
-    }
-
     sprintf(file_path, "%s/%s", server->static_file_path, request->uri.path);
     if(stat(file_path, &sbuf) < 0) {
         return_client_error(incoming_socket, request->uri.path, "404",
                 "Not found", "Dirt couldn't find this file");
         return;
+    }
+
+    if(S_ISDIR(sbuf.st_mode)) {
+        strcat(file_path, "index.html");
+        if(stat(file_path, &sbuf) < 0) {
+            return_client_error(incoming_socket, request->uri.path, "404",
+                    "Not found", "Dirt couldn't find this file");
+            return;
+        }
     }
 
     if(!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) {
