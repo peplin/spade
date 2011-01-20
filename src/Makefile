@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Werror -I src -fmessage-length=80
+CFLAGS = -Wall -std=c99 -Werror -I src -fmessage-length=80
 LDFLAGS = -lpthread -lev -llog4c -lconfig
 
 ifdef DEBUG

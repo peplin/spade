@@ -80,7 +80,6 @@ typedef struct {
     int port;
     char path[MAX_PATH_LENGTH];
     int valid;
-    int is_dynamic;
     char query_string[MAX_QUERY_STRING_LENGTH];
 } http_uri;
 

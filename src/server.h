@@ -11,12 +11,22 @@
 #include "http.h"
 
 #define MAX_CONNECTION_QUEUE 20
+#define MAX_HANDLERS 255
+#define MAX_DYNAMIC_URL_PREFIX 255
+#define MAX_HANDLER_PATH_LENGTH 255
+
+typedef struct {
+    char handler[MAX_HANDLER_PATH_LENGTH];
+    char url[MAX_DYNAMIC_URL_PREFIX];
+} dynamic_handler;
 
 /* Struct to hold server-wide settings and variables */
 typedef struct dirt_server {
     unsigned int port;
     char static_file_path[MAX_PATH_LENGTH];
     char dynamic_file_path[MAX_PATH_LENGTH];
+    unsigned int handler_count;
+    dynamic_handler handlers[MAX_HANDLERS];
     int socket;
     pthread_attr_t thread_attr; /* Attributes for receive threads */
 } dirt_server;
@@ -42,5 +52,8 @@ int initialize_server(dirt_server* server);
 void run_server(dirt_server* server);
 
 void shutdown_server(dirt_server* server);
+
+void register_handler(dirt_server* server, const char* url,
+        const char* handler_path);
 
 #endif // _SERVER_H_

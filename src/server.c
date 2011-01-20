@@ -187,7 +187,7 @@ void handle_get(dirt_server* server, int incoming_socket,
         return;
     }
 
-    if(request->uri.is_dynamic) {
+    if(request->uri.query_string) {
         if(!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) {
             return_client_error(incoming_socket, request->uri.path, "403",
                     "Forbidden", "Dirt couldn't run the CGI program");
@@ -231,6 +231,15 @@ void run_server(dirt_server* server) {
 }
 
 void shutdown_server(dirt_server* server) {
+}
+
+void register_handler(dirt_server* server, const char* url,
+        const char* handler_path){
+    dynamic_handler handler;
+    strcpy(handler.url, url);
+    strcpy(handler.handler, handler_path);
+    server->handler_count++;
+    server->handlers[server->handler_count] = handler;
 }
 
 /*

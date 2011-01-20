@@ -4,6 +4,7 @@ void configure_port(dirt_server* server, unsigned int override_port,
         config_t* configuration);
 void configure_static_file_path(dirt_server* server, config_t* configuration);
 void configure_dynamic_file_path(dirt_server* server, config_t* configuration);
+void configure_dynamic_handlers(dirt_server* server, config_t* configuration);
 
 int configure_server(dirt_server* server, char* configuration_path,
         unsigned int override_port) {
@@ -12,6 +13,7 @@ int configure_server(dirt_server* server, char* configuration_path,
     config_init(configuration);
  
     if (!config_read_file(configuration, configuration_path)) {
+        // TODO why are these undefined?
         //fprintf(stderr, "%s:%d - %s\n",
         //    config_error_file(configuration),
         //    config_error_line(configuration),
@@ -47,7 +49,7 @@ void configure_port(dirt_server* server, unsigned int override_port,
 
 void configure_static_file_path(dirt_server* server, config_t* configuration) {
     const char* static_file_path = NULL;
-    if(config_lookup_string(configuration, "static_file_path",
+    if(config_lookup_string(configuration, "static.file_path",
             &static_file_path)) {
         strcpy(server->static_file_path, static_file_path);
         log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_INFO,
@@ -62,7 +64,7 @@ void configure_static_file_path(dirt_server* server, config_t* configuration) {
 
 void configure_dynamic_file_path(dirt_server* server, config_t* configuration) {
     const char* dynamic_file_path = NULL;
-    if(config_lookup_string(configuration, "dynamic_file_path",
+    if(config_lookup_string(configuration, "dynamic.file_path",
             &dynamic_file_path)) {
         strcpy(server->dynamic_file_path, dynamic_file_path);
         log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_INFO,
@@ -72,5 +74,23 @@ void configure_dynamic_file_path(dirt_server* server, config_t* configuration) {
         strcpy(server->dynamic_file_path, DEFAULT_STATIC_FILE_PATH);
         log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_INFO,
                 "Using default static file path '%s'", server->static_file_path);
+    }
+}
+
+void configure_dynamic_handlers(dirt_server* server, config_t* configuration) {
+    config_setting_t* handler_settings = config_lookup(configuration,
+            "dynamic.handlers");
+    int handler_count = config_setting_length(handler_settings);
+
+    for (int n = 0; n < handler_count; n++) {
+        config_setting_t* handler_setting = config_setting_get_elem(
+                handler_settings, n);
+        const char* handler = NULL;
+        config_setting_lookup_string(handler_setting, "handler", &handler);
+
+        const char* url = NULL;
+        config_setting_lookup_string(handler_setting, "url", &url);
+
+        register_handler(server, url, handler);
     }
 }

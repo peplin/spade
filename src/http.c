@@ -211,7 +211,6 @@ http_header parse_http_header(char* header) {
 http_uri parse_http_uri(char* uri) {
     http_uri parsed_uri;
     parsed_uri.valid = 0;
-    parsed_uri.is_dynamic = 0;
     parsed_uri.query_string[0] = '\0';
     parsed_uri.port = DEFAULT_HTTP_PORT;
     parsed_uri.host[0] = '\0';
@@ -243,7 +242,6 @@ http_uri parse_http_uri(char* uri) {
 
     char* query_string_index = strchr(parsed_uri.path, '?');
     if(query_string_index) {
-        parsed_uri.is_dynamic = 1;
         strcpy(parsed_uri.query_string, query_string_index + 1);
         *query_string_index = '\0';
     }
