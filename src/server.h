@@ -12,12 +12,12 @@
 
 #define MAX_CONNECTION_QUEUE 20
 #define MAX_HANDLERS 255
-#define MAX_DYNAMIC_URL_PREFIX 255
+#define MAX_DYNAMIC_PATH_PREFIX 255
 #define MAX_HANDLER_PATH_LENGTH 255
 
 typedef struct {
     char handler[MAX_HANDLER_PATH_LENGTH];
-    char url[MAX_DYNAMIC_URL_PREFIX];
+    char path[MAX_DYNAMIC_PATH_PREFIX];
 } dynamic_handler;
 
 /* Struct to hold server-wide settings and variables */
@@ -53,7 +53,7 @@ void run_server(dirt_server* server);
 
 void shutdown_server(dirt_server* server);
 
-void register_handler(dirt_server* server, const char* url,
+void register_handler(dirt_server* server, const char* path,
         const char* handler_path);
 
 #endif // _SERVER_H_

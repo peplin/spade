@@ -25,7 +25,7 @@ int initialize_listen_socket(dirt_server* server) {
     result = getaddrinfo(NULL, port, &hints, &serv);
     if(result < 0) {
         log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_DEBUG,
-                "ERROR: getaddrinfo failed with error %d: %s",
+                "getaddrinfo failed with error %d: %s",
                 result, gai_strerror(result));
         return result;
     }
@@ -179,30 +179,36 @@ void handle_get(dirt_server* server, int incoming_socket,
         http_request* request) {
     struct stat sbuf;
     char file_path[MAX_PATH_LENGTH];
-    sprintf("%s/%s", server->static_file_path, request->uri.path);
-    // TODO we need a dynamic file path too?
+
+    for (int i = 0; i < server->handler_count; i++) {
+        sprintf(file_path, "%s/%s", server->dynamic_file_path,
+                server->handlers[i].handler);
+        stat(file_path, &sbuf);
+        if(!strcmp(server->handlers[i].path, request->uri.path)) {
+            if(!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) {
+                return_client_error(incoming_socket, request->uri.path, "403",
+                        "Forbidden", "Dirt couldn't run the CGI program");
+                return;
+            }
+            serve_dynamic(incoming_socket, file_path,
+                    request->uri.query_string);
+            return;
+        }
+    }
+
+    sprintf(file_path, "%s/%s", server->static_file_path, request->uri.path);
     if(stat(file_path, &sbuf) < 0) {
         return_client_error(incoming_socket, request->uri.path, "404",
                 "Not found", "Dirt couldn't find this file");
         return;
     }
 
-    if(request->uri.query_string) {
-        if(!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) {
-            return_client_error(incoming_socket, request->uri.path, "403",
-                    "Forbidden", "Dirt couldn't run the CGI program");
-            return;
-        }
-        serve_dynamic(incoming_socket, request->uri.path,
-                request->uri.query_string);
-    } else {
-        if(!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) {
-            return_client_error(incoming_socket, request->uri.path, "403",
-                    "Forbidden", "Dirt couldn't read the file");
-            return;
-        }
-        serve_static(incoming_socket, file_path, sbuf.st_size);
+    if(!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) {
+        return_client_error(incoming_socket, request->uri.path, "403",
+                "Forbidden", "Dirt couldn't read the file");
+        return;
     }
+    serve_static(incoming_socket, file_path, sbuf.st_size);
 }
 
 /* Helper function for new threads */
@@ -233,13 +239,29 @@ void run_server(dirt_server* server) {
 void shutdown_server(dirt_server* server) {
 }
 
-void register_handler(dirt_server* server, const char* url,
+void register_handler(dirt_server* server, const char* path,
         const char* handler_path){
     dynamic_handler handler;
-    strcpy(handler.url, url);
+    strcpy(handler.path, path);
     strcpy(handler.handler, handler_path);
-    server->handler_count++;
-    server->handlers[server->handler_count] = handler;
+
+    char file_path[MAX_PATH_LENGTH];
+    sprintf(file_path, "%s/%s", server->dynamic_file_path, handler.path);
+
+    struct stat sbuf;
+    if(stat(file_path, &sbuf) < 0) {
+        log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_ERROR,
+                "Couldn't find the handler file '%s' -- not addeding handler",
+                file_path);
+    } else {
+        if(!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) {
+            log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_ERROR,
+                    "Couldn't run the handler file '%s' -- not adding handler",
+                    file_path);
+        }
+        server->handlers[server->handler_count] = handler;
+        server->handler_count++;
+    }
 }
 
 /*
