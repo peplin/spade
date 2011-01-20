@@ -1,6 +1,8 @@
 #ifndef _DIRT_H_
 #define _DIRT_H_
 
+#define _GNU_SOURCE
+
 #include <ev.h>
 #include <log4c.h>
 #include <libconfig.h>
