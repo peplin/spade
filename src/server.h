@@ -19,9 +19,9 @@
 
 /* Arguments for spawned receiver threads */
 typedef struct {
+    spade_server* server;
     int incoming_socket;
     struct sockaddr_in client_address;
-    spade_server* server;
 } receive_args;
 
 /* Initialize spade_server struct server with values specified.

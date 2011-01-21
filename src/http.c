@@ -214,6 +214,7 @@ http_uri parse_http_uri(char* uri) {
     parsed_uri.query_string[0] = '\0';
     parsed_uri.port = DEFAULT_HTTP_PORT;
     parsed_uri.host[0] = '\0';
+    parsed_uri.path[0] = '\0';
     char* port;
     char* protocol_index;
     if((protocol_index = strstr(uri, "://"))) {

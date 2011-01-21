@@ -25,6 +25,7 @@ int initialize_listen_socket(spade_server* server) {
     sprintf(port, "%d", server->port);
     struct addrinfo* serv = NULL;
     struct addrinfo hints;
+    memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
@@ -233,12 +234,12 @@ void run_server(spade_server* server) {
         int message_socket = accept(server->socket, 
                 (struct sockaddr *) &client_address, &sin_size);
         if(!check_error(message_socket, "accept")) {
-            receive_args* receive_args = malloc(sizeof(receive_args));
-            receive_args->server = server;
-            receive_args->incoming_socket = message_socket;
-            receive_args->client_address = client_address;
+            receive_args* args = malloc(sizeof(receive_args));
+            args->server = server;
+            args->incoming_socket = message_socket;
+            args->client_address = client_address;
             pthread_create(&receive_thread, &server->thread_attr,
-                    receive_helper, (void*) receive_args);
+                    receive_helper, (void*) args);
         }
     }
 }
