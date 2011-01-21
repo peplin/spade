@@ -27,7 +27,7 @@ int initialize_listen_socket(dirt_server* server) {
 
     result = getaddrinfo(NULL, port, &hints, &serv);
     if(result < 0) {
-        log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_DEBUG,
+        log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_WARN,
                 "getaddrinfo failed with error %d: %s",
                 result, gai_strerror(result));
         return result;
@@ -288,9 +288,9 @@ void serve_static(dirt_server* server, http_request* request,
         return;
     }
 
-    char filetype[MAXLINE];
-    get_filetype(filename, filetype);
-    return_response_headers(incoming_socket, "200", "OK", NULL, filetype, 
+    char content_type[MAXLINE];
+    get_filetype(filename, content_type);
+    return_response_headers(incoming_socket, "200", "OK", NULL, content_type, 
             filesize);
 
     /* Send response body to client */
@@ -348,19 +348,25 @@ void return_response_headers(int incoming_socket, char* status_code,
 
     sprintf(buf, "HTTP/1.0 %s %s\r\n", status_code, message);
     csapp_rio_writen(incoming_socket, buf, strlen(buf));
+    log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_DEBUG,
+            "%s", buf);
 
-    if(content_type) {
-        sprintf(buf, "Content-Type: %s\r\n\r\n", content_type);
+    char final_content_type[MAXLINE];
+    if (!content_type) {
+        strcpy(final_content_type, "text/html");
     } else {
-        sprintf(buf, "Content-Type: text/html\r\n");
+        strcpy(final_content_type, content_type);
     }
+    sprintf(buf, "Content-Type: %s\r\n", final_content_type);
     csapp_rio_writen(incoming_socket, buf, strlen(buf));
 
-    if (body) {
-        sprintf(buf, "Content-Length: %d\r\n\r\n", (int)strlen(body));
-    } else {
-        sprintf(buf, "Content-Length: %d\r\n\r\n", length);
+    if(body) {
+        length = (int) strlen(body);
     }
+    sprintf(buf, "Content-Length: %d\r\n", length);
+    csapp_rio_writen(incoming_socket, buf, strlen(buf));
+
+    sprintf(buf, "\r\n");
     csapp_rio_writen(incoming_socket, buf, strlen(buf));
 
     if (body) {
