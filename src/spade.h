@@ -1,5 +1,5 @@
-#ifndef _DIRT_H_
-#define _DIRT_H_
+#ifndef _SPADE_H_
+#define _SPADE_H_
 
 #define _GNU_SOURCE
 
@@ -13,6 +13,6 @@
 #include "server.h"
 #include "config.h"
 
-#define DEFAULT_CONFIGURATION_FILE_PATH "config/dirt.cfg"
+#define DEFAULT_CONFIGURATION_FILE_PATH "config/spade.cfg"
 
-#endif // _DIRT_H_
+#endif // _SPADE_H_

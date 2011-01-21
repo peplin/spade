@@ -21,7 +21,7 @@ typedef struct {
 } dynamic_handler;
 
 /* Struct to hold server-wide settings and variables */
-typedef struct dirt_server {
+typedef struct spade_server {
     unsigned int port;
     char static_file_path[MAX_PATH_LENGTH];
     char dynamic_file_path[MAX_PATH_LENGTH];
@@ -30,31 +30,31 @@ typedef struct dirt_server {
     char hostname[MAX_HOSTNAME_LENGTH];
     int socket;
     pthread_attr_t thread_attr; /* Attributes for receive threads */
-} dirt_server;
+} spade_server;
 
 /* Arguments for spawned receiver threads */
 typedef struct {
     int incoming_socket;
-    dirt_server* server;
+    spade_server* server;
 } receive_args;
 
-/* Initialize dirt_server struct server with values specified.
+/* Initialize spade_server struct server with values specified.
  *
  * Modifies *server.
  * Returns 0 if successful.
  */
-int initialize_server(dirt_server* server);
+int initialize_server(spade_server* server);
 
 /* Main thread for proxy server. Listens on the server socket and spawns
  * threads to handle new requests. Should never return.
  *
  * Requires server to be initialized with initialize_server.
  */
-void run_server(dirt_server* server);
+void run_server(spade_server* server);
 
-void shutdown_server(dirt_server* server);
+void shutdown_server(spade_server* server);
 
-void register_handler(dirt_server* server, const char* path,
+void register_handler(spade_server* server, const char* path,
         const char* handler_path);
 
 #endif // _SERVER_H_

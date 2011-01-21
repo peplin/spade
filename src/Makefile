@@ -10,9 +10,9 @@ LDFLAGS = -lpthread -lev -llog4c -lconfig
 
 CFLAGS += -ggdb
 
-all: dirt
+all: spade
 
-dirt: dirt.o csapp.o http.o util.o server.o config.o
+spade: spade.o csapp.o http.o util.o server.o config.o
 
 clean:
-	rm -f *.o dirt *~
+	rm -f *.o spade *~

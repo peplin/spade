@@ -1,11 +1,11 @@
 /* simple libev-based http server */
 
-#include "dirt.h"
+#include "spade.h"
 
 /* Proxy server struct is global so we can free it upon SIGINT. Nothing should
  * access this directly except free_server and main!
  */ 
-dirt_server global_server;
+spade_server global_server;
 
 void free_server() {
     shutdown_server(&global_server);
@@ -13,7 +13,7 @@ void free_server() {
 }
 
 void print_help() {
-    printf("dirt - a concurrent web server\n");
+    printf("spade - a concurrent web server\n");
     printf("Christopher Peplin, peplin@cmu.edu\n");
     printf("Options:\n");
     printf(" -p <port>   set the port for the server (default 8080)\n");

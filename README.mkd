@@ -1,4 +1,4 @@
-dirt - a tiny concurrent web server for dynamic content
+spade - a tiny concurrent web server for dynamic content
 ========================================================
 
 ## Dependencies

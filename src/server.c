@@ -6,9 +6,9 @@ void return_response_headers(int incoming_socket, char* status_code,
         char* message, char* body, char* content_type, int length,
         int close_headers);
 void serve_dynamic(int incoming_socket, char *filename, char *cgiargs);
-void serve_static(dirt_server* server, http_request* request,
+void serve_static(spade_server* server, http_request* request,
         int incoming_socket, char *filename, int filesize);
-void handle_get(dirt_server* server, int incoming_socket,
+void handle_get(spade_server* server, int incoming_socket,
         http_request* request);
 
 /* Initialize socket for proxy server to listen on.
@@ -16,7 +16,7 @@ void handle_get(dirt_server* server, int incoming_socket,
  * Modifies server->socket.
  * Returns 0 if sucessful.
  */
-int initialize_listen_socket(dirt_server* server) {
+int initialize_listen_socket(spade_server* server) {
     int result;
     int on = 1;
     char port[MAX_PORT_LENGTH];
@@ -28,7 +28,7 @@ int initialize_listen_socket(dirt_server* server) {
 
     result = getaddrinfo(NULL, port, &hints, &serv);
     if(result < 0) {
-        log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_WARN,
+        log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_WARN,
                 "getaddrinfo failed with error %d: %s",
                 result, gai_strerror(result));
         return result;
@@ -62,7 +62,7 @@ int initialize_listen_socket(dirt_server* server) {
     return 0;
 }
 
-int initialize_server(dirt_server* server) {
+int initialize_server(spade_server* server) {
     pthread_attr_init(&server->thread_attr);
     pthread_attr_setstacksize(&server->thread_attr, 1024*1024);
     pthread_attr_setdetachstate(&server->thread_attr, PTHREAD_CREATE_DETACHED);
@@ -71,7 +71,7 @@ int initialize_server(dirt_server* server) {
         return -1;
     }
 
-    log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_INFO,
+    log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
             "Starting server on port %d, serving files frome %s",
             server->port, server->static_file_path);
     return 0;
@@ -83,10 +83,10 @@ int initialize_server(dirt_server* server) {
  * Modifies rio, buf.
  * Returns the number of bytes read, or a negative number if an error.
  */
-int read_line(rio_t* rio, char* buf, dirt_server* server) {
+int read_line(rio_t* rio, char* buf, spade_server* server) {
     int bytes_read = rio_readlineb(rio, buf, MAXLINE);
     if(bytes_read > 0 && buf[bytes_read - 1] != '\n') {
-        log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_WARN,
+        log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_WARN,
                 "HTTP request line:\n%s with length %d longer than MAXLINE %d",
                 buf, bytes_read, MAXLINE);
     }
@@ -101,7 +101,7 @@ int read_line(rio_t* rio, char* buf, dirt_server* server) {
  * Modifies rio, message.
  */
 void read_http_headers(rio_t* rio, http_message* message,
-        dirt_server* server) {
+        spade_server* server) {
     if(rio->rio_cnt) {
         char header_string[MAXLINE];
         int bytes_read = read_line(rio, header_string, server);
@@ -122,7 +122,7 @@ void read_http_headers(rio_t* rio, http_message* message,
  *
  * Modifies rio.
  */
-http_response read_http_response(rio_t* rio, dirt_server* server) {
+http_response read_http_response(rio_t* rio, spade_server* server) {
     char message_string[MAXLINE];
     http_response response;
     response.message.valid = 0;
@@ -140,12 +140,12 @@ http_response read_http_response(rio_t* rio, dirt_server* server) {
  * Modifies rio.
  * Returns the parsed request, which may or may not have request.valid.
  */
-http_request read_http_request(rio_t* rio, dirt_server* server) {
+http_request read_http_request(rio_t* rio, spade_server* server) {
     char message_string[MAXLINE];
     http_request request;
     request.message.valid = 0;
     if(read_line(rio, message_string, server) > 0) {
-        log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_DEBUG,
+        log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_DEBUG,
                 "%s", message_string);
         request = parse_http_request(message_string);
         read_http_headers(rio, &request.message, server);
@@ -171,15 +171,15 @@ void receive(receive_args* args) {
                         http_method_to_string(request.method),
                         "501",
                         "Not Implemented",
-                        "Dirt does not implement this method");
+                        "Spade does not implement this method");
         }
     }
-    log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_TRACE,
+    log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_TRACE,
             "closing socket %d", args->incoming_socket);
     close(args->incoming_socket);
 }
 
-void handle_get(dirt_server* server, int incoming_socket,
+void handle_get(spade_server* server, int incoming_socket,
         http_request* request) {
     struct stat sbuf;
     char file_path[MAX_PATH_LENGTH];
@@ -191,7 +191,7 @@ void handle_get(dirt_server* server, int incoming_socket,
         if(!strcmp(server->handlers[i].path, request->uri.path)) {
             if(!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) {
                 return_client_error(incoming_socket, request->uri.path, "403",
-                        "Forbidden", "Dirt couldn't run the CGI program");
+                        "Forbidden", "Spade couldn't run the CGI program");
                 return;
             }
             serve_dynamic(incoming_socket, file_path,
@@ -203,7 +203,7 @@ void handle_get(dirt_server* server, int incoming_socket,
     sprintf(file_path, "%s/%s", server->static_file_path, request->uri.path);
     if(stat(file_path, &sbuf) < 0) {
         return_client_error(incoming_socket, request->uri.path, "404",
-                "Not found", "Dirt couldn't find this file");
+                "Not found", "Spade couldn't find this file");
         return;
     }
 
@@ -211,14 +211,14 @@ void handle_get(dirt_server* server, int incoming_socket,
         strcat(file_path, "index.html");
         if(stat(file_path, &sbuf) < 0) {
             return_client_error(incoming_socket, request->uri.path, "404",
-                    "Not found", "Dirt couldn't find this file");
+                    "Not found", "Spade couldn't find this file");
             return;
         }
     }
 
     if(!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) {
         return_client_error(incoming_socket, request->uri.path, "403",
-                "Forbidden", "Dirt couldn't read the file");
+                "Forbidden", "Spade couldn't read the file");
         return;
     }
     serve_static(server, request, incoming_socket, file_path, sbuf.st_size);
@@ -233,7 +233,7 @@ void* receive_helper(void* args) {
     return 0;
 }
 
-void run_server(dirt_server* server) {
+void run_server(spade_server* server) {
     pthread_t receive_thread;
     signal(SIGPIPE, SIG_IGN);
 
@@ -249,10 +249,10 @@ void run_server(dirt_server* server) {
     }
 }
 
-void shutdown_server(dirt_server* server) {
+void shutdown_server(spade_server* server) {
 }
 
-void register_handler(dirt_server* server, const char* path,
+void register_handler(spade_server* server, const char* path,
         const char* handler_path){
     dynamic_handler handler;
     strcpy(handler.path, path);
@@ -263,12 +263,12 @@ void register_handler(dirt_server* server, const char* path,
 
     struct stat sbuf;
     if(stat(file_path, &sbuf) < 0) {
-        log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_ERROR,
+        log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_ERROR,
                 "Couldn't find the handler file '%s' -- not adding handler",
                 file_path);
     } else {
         if(!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) {
-            log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_ERROR,
+            log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_ERROR,
                     "Couldn't run the handler file '%s' -- not adding handler",
                     file_path);
         }
@@ -280,12 +280,12 @@ void register_handler(dirt_server* server, const char* path,
 /*
  * serve_static - copy a file back to the client
  */
-void serve_static(dirt_server* server, http_request* request, 
+void serve_static(spade_server* server, http_request* request, 
         int incoming_socket, char *filename, int filesize) {
     int file_descriptor = open(filename, O_RDONLY, 0);
     if(check_error(file_descriptor, "serve_static")) {
         return_client_error(incoming_socket, strerror(errno), "500",
-                "Internal Server Error", "Dirt crashed and burned.");
+                "Internal Server Error", "Spade crashed and burned.");
         return;
     }
 
@@ -331,11 +331,11 @@ void return_client_error(int incoming_socket, char *cause, char *status_code,
     char body[MAXBUF];
 
     /* Build the HTTP response body */
-    sprintf(body, "<html><title>Dirt Error</title>");
+    sprintf(body, "<html><title>Spade Error</title>");
     sprintf(body, "%s<body bgcolor=""ffffff"">\r\n", body);
     sprintf(body, "%s%s: %s\r\n", body, status_code, short_message);
     sprintf(body, "%s<p>%s: %s\r\n", body, longmsg, cause);
-    sprintf(body, "%s<hr><em>The Dirt Web server</em>\r\n", body);
+    sprintf(body, "%s<hr><em>The Spade Web server</em>\r\n", body);
 
     // TODO if the dynamic process doesn't close the headers, should we?
     return_response_headers(incoming_socket, status_code, short_message, body, 
@@ -349,7 +349,7 @@ void return_response_headers(int incoming_socket, char* status_code,
 
     sprintf(buf, "HTTP/1.0 %s %s\r\n", status_code, message);
     csapp_rio_writen(incoming_socket, buf, strlen(buf));
-    log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_DEBUG,
+    log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_DEBUG,
             "%s", buf);
 
     sprintf(buf, "Content-Type: %s\r\n", content_type);

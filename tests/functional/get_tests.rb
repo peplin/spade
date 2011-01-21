@@ -5,7 +5,7 @@ require 'net/http'
 class GetTests < Test::Unit::TestCase
     def setup
         @server = fork {
-          exec 'src/dirt -c config/test.cfg -p 8000'
+          exec 'src/spade -c config/test.cfg -p 8000'
         }
         sleep 0.1
         @http = Net::HTTP.start('localhost', 8000)
