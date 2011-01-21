@@ -23,7 +23,8 @@ int initialize_listen_socket(spade_server* server) {
     int on = 1;
     char port[MAX_PORT_LENGTH];
     sprintf(port, "%d", server->port);
-    struct addrinfo* serv = NULL, hints;
+    struct addrinfo* serv = NULL;
+    struct addrinfo hints;
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
@@ -163,7 +164,7 @@ void receive(receive_args* args) {
     rio_t rio_client;
     rio_readinitb(&rio_client, args->incoming_socket);
     http_request request = read_http_request(&rio_client, args->server);
-    strcpy(request.remote_address, inet_ntoa(args->client_address.sin_addr));
+    //strcpy(request.remote_address, inet_ntoa(args->client_address.sin_addr));
     if(args->server->do_reverse_lookups) {
         resolve_hostname(request.remote_host, &args->client_address);
     }

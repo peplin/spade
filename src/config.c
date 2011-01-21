@@ -126,9 +126,9 @@ void configure_dynamic_handlers(spade_server* server, config_t* configuration) {
 }
 
 void configure_reverse_lookups(spade_server* server, config_t* configuration) {
-    long int do_reverse_lookups = 0;
+    int do_reverse_lookups = 0;
     if(config_lookup_int(configuration, "do_reverse_lookups",
-            &do_reverse_lookups)) {
+            (long int*) &do_reverse_lookups)) {
         server->do_reverse_lookups = do_reverse_lookups;
     }
 

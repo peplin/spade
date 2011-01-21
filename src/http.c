@@ -236,7 +236,7 @@ http_uri parse_http_uri(char* uri) {
         parsed_uri.valid = 1;
     }
 
-    if(parsed_uri.path[0] == '\0') {
+    if(parsed_uri.path && parsed_uri.path[0] == '\0') {
         strncpy(parsed_uri.path, "/", 2);
     }
 
