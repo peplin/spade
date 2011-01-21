@@ -145,12 +145,15 @@ http_response read_http_response(rio_t* rio, spade_server* server) {
  * Returns the parsed request, which may or may not have request.valid.
  */
 http_request read_http_request(rio_t* rio, spade_server* server) {
-    char message_string[MAXLINE];
     http_request request;
     request.message.valid = 0;
+    char message_string[MAXLINE];
     if(read_line(rio, message_string, server) > 0) {
+        char stripped_message_string[MAXLINE];
+        strcpy(stripped_message_string, message_string);
+        strstr(stripped_message_string, "\r\n")[0] = '\0';
         log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_DEBUG,
-                "%s", message_string);
+                "%s", stripped_message_string);
         request = parse_http_request(message_string);
         read_http_headers(rio, &request.message, server);
     }
@@ -380,6 +383,7 @@ void return_response_headers(int incoming_socket, char* status_code,
 
     sprintf(buf, "HTTP/1.0 %s %s\r\n", status_code, message);
     csapp_rio_writen(incoming_socket, buf, strlen(buf));
+    strstr(buf, "\r\n")[0] = '\0';
     log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_DEBUG,
             "%s", buf);
 
