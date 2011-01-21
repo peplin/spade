@@ -11,7 +11,7 @@
     <category name="root" priority="notice"/>
     <category name="spade" priority="debug" appender="stdout" />
 
-    <appender name="stdout" type="stream" layout="basic"/>
+    <appender name="stdout" type="stream" layout="dated"/>
     <appender name="stderr" type="stream" layout="dated"/>
     <appender name="syslog" type="syslog" layout="basic"/>
 
