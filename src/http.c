@@ -259,7 +259,7 @@ http_request parse_http_request(char* request) {
     strncpy(uri, separator + 1, MAXLINE);
     strchr(uri, ' ')[0] = '\0';
     separator = strchr(separator + 1, ' ');
-    strcpy(version, separator + 1);
+    strncpy(version, separator + 1, MAX_VERSION_LENGTH);
     version[MAX_VERSION_LENGTH - 1] = '\0';
 
     parsed_request.method = string_to_http_method(method);
