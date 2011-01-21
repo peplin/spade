@@ -3,7 +3,8 @@
 void return_client_error(int incoming_socket, char *cause, char* status_code,
         char *shortmsg, char *longmsg);
 void return_response_headers(int incoming_socket, char* status_code,
-        char* message, char* body, char* content_type, int length);
+        char* message, char* body, char* content_type, int length,
+        int close_headers);
 void serve_dynamic(int incoming_socket, char *filename, char *cgiargs);
 void serve_static(dirt_server* server, http_request* request,
         int incoming_socket, char *filename, int filesize);
@@ -291,7 +292,7 @@ void serve_static(dirt_server* server, http_request* request,
     char content_type[MAXLINE];
     get_filetype(filename, content_type);
     return_response_headers(incoming_socket, "200", "OK", NULL, content_type, 
-            filesize);
+            filesize, 1);
 
     /* Send response body to client */
     char *srcp;
@@ -309,10 +310,8 @@ void serve_static(dirt_server* server, http_request* request,
 void serve_dynamic(int incoming_socket, char *filename, char *cgiargs) {
     char *emptylist[] = { NULL };
 
-    // TODO the dynamic part should have control over the response code and
-    // headers, no?
     /* Return first part of HTTP response */
-    return_response_headers(incoming_socket, "200", "OK", NULL, NULL, 0);
+    return_response_headers(incoming_socket, "200", "OK", NULL, NULL, 0, 0);
 
     if(csapp_fork() == 0) { /* child */
         /* Real server would set all CGI vars here */
@@ -338,12 +337,14 @@ void return_client_error(int incoming_socket, char *cause, char *status_code,
     sprintf(body, "%s<p>%s: %s\r\n", body, longmsg, cause);
     sprintf(body, "%s<hr><em>The Dirt Web server</em>\r\n", body);
 
+    // TODO if the dynamic process doesn't close the headers, should we?
     return_response_headers(incoming_socket, status_code, short_message, body, 
-            NULL, 0);
+            "text/html", 0, 1);
 }
 
 void return_response_headers(int incoming_socket, char* status_code,
-        char* message, char* body, char* content_type, int length) {
+        char* message, char* body, char* content_type, int length,
+        int close_headers) {
     char buf[MAXLINE];
 
     sprintf(buf, "HTTP/1.0 %s %s\r\n", status_code, message);
@@ -351,25 +352,23 @@ void return_response_headers(int incoming_socket, char* status_code,
     log4c_category_log(log4c_category_get("dirt"), LOG4C_PRIORITY_DEBUG,
             "%s", buf);
 
-    char final_content_type[MAXLINE];
-    if (!content_type) {
-        strcpy(final_content_type, "text/html");
-    } else {
-        strcpy(final_content_type, content_type);
-    }
-    sprintf(buf, "Content-Type: %s\r\n", final_content_type);
+    sprintf(buf, "Content-Type: %s\r\n", content_type);
     csapp_rio_writen(incoming_socket, buf, strlen(buf));
 
     if(body) {
         length = (int) strlen(body);
     }
-    sprintf(buf, "Content-Length: %d\r\n", length);
-    csapp_rio_writen(incoming_socket, buf, strlen(buf));
+    if (length != 0) {
+        sprintf(buf, "Content-Length: %d\r\n", length);
+        csapp_rio_writen(incoming_socket, buf, strlen(buf));
+    }
 
-    sprintf(buf, "\r\n");
-    csapp_rio_writen(incoming_socket, buf, strlen(buf));
+    if(close_headers) {
+        sprintf(buf, "\r\n");
+        csapp_rio_writen(incoming_socket, buf, strlen(buf));
 
-    if (body) {
-        csapp_rio_writen(incoming_socket, body, strlen(body));
+        if (body) {
+            csapp_rio_writen(incoming_socket, body, strlen(body));
+        }
     }
 }
