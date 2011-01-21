@@ -6,6 +6,7 @@ void configure_port(spade_server* server, unsigned int override_port,
 void configure_static_file_path(spade_server* server, config_t* configuration);
 void configure_dynamic_file_path(spade_server* server, config_t* configuration);
 void configure_dynamic_handlers(spade_server* server, config_t* configuration);
+void configure_reverse_lookups(spade_server* server, config_t* configuration);
 
 int configure_server(spade_server* server, char* configuration_path,
         unsigned int override_port) {
@@ -26,6 +27,7 @@ int configure_server(spade_server* server, char* configuration_path,
 
     configure_hostname(server, configuration);
     configure_port(server, override_port, configuration);
+    configure_reverse_lookups(server, configuration);
     configure_static_file_path(server, configuration);
     configure_dynamic_file_path(server, configuration);
     configure_dynamic_handlers(server, configuration);
@@ -67,7 +69,7 @@ void configure_hostname(spade_server* server, config_t* configuration) {
 
 void configure_static_file_path(spade_server* server, config_t* configuration) {
     const char* static_file_path = NULL;
-    if(config_lookup_string(configuration, "static.file_path",
+    if(config_lookup_string(configuration, "static.document_root",
             &static_file_path)) {
         strcpy(server->static_file_path, static_file_path);
         log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
@@ -82,7 +84,7 @@ void configure_static_file_path(spade_server* server, config_t* configuration) {
 
 void configure_dynamic_file_path(spade_server* server, config_t* configuration) {
     const char* dynamic_file_path = NULL;
-    if(config_lookup_string(configuration, "dynamic.file_path",
+    if(config_lookup_string(configuration, "dynamic.document_root",
             &dynamic_file_path)) {
         strcpy(server->dynamic_file_path, dynamic_file_path);
         log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
@@ -120,5 +122,21 @@ void configure_dynamic_handlers(spade_server* server, config_t* configuration) {
         log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
                 "Registered a total of %d dynamic URL handlers",
                     server->handler_count);
+    }
+}
+
+void configure_reverse_lookups(spade_server* server, config_t* configuration) {
+    long int do_reverse_lookups = 0;
+    if(config_lookup_int(configuration, "do_reverse_lookups",
+            &do_reverse_lookups)) {
+        server->do_reverse_lookups = do_reverse_lookups;
+    }
+
+    if (server->do_reverse_lookups) {
+        log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
+                "Will perform reverse lookups for client hostnames");
+    } else {
+        log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
+                "Will not perform reverse lookups for client hostnames");
     }
 }

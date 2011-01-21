@@ -1,0 +1,16 @@
+#ifndef _CONSTANTS_H
+#define _CONSTANTS_H
+
+#define SPADE_SERVER_DESCRIPTOR "Spade 1.0"
+
+#define MAX_HANDLERS 255
+#define MAX_DYNAMIC_PATH_PREFIX 255
+#define MAX_HANDLER_PATH_LENGTH 255
+
+#ifndef   NI_MAXHOST
+#define   NI_MAXHOST 1025
+#endif
+
+#define MAX_IP_ADDRESS 15
+
+#endif // _CONSTANTS_H

@@ -5,37 +5,22 @@
 
 #include <log4c.h>
 #include <errno.h>
+#include <stdlib.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 #include "csapp.h"
 #include "util.h"
 #include "http.h"
 #include "cgi.h"
+#include "types.h"
 
 #define MAX_CONNECTION_QUEUE 20
-#define MAX_HANDLERS 255
-#define MAX_DYNAMIC_PATH_PREFIX 255
-#define MAX_HANDLER_PATH_LENGTH 255
-
-typedef struct {
-    char handler[MAX_HANDLER_PATH_LENGTH];
-    char path[MAX_DYNAMIC_PATH_PREFIX];
-} dynamic_handler;
-
-/* Struct to hold server-wide settings and variables */
-typedef struct spade_server {
-    unsigned int port;
-    char static_file_path[MAX_PATH_LENGTH];
-    char dynamic_file_path[MAX_PATH_LENGTH];
-    unsigned int handler_count;
-    dynamic_handler handlers[MAX_HANDLERS];
-    char hostname[MAX_HOSTNAME_LENGTH];
-    int socket;
-    pthread_attr_t thread_attr; /* Attributes for receive threads */
-} spade_server;
 
 /* Arguments for spawned receiver threads */
 typedef struct {
     int incoming_socket;
+    struct sockaddr_in client_address;
     spade_server* server;
 } receive_args;
 

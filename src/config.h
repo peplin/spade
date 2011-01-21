@@ -4,6 +4,7 @@
 #include <libconfig.h>
 
 #include "server.h"
+#include "types.h"
 
 #define DEFAULT_PORT 8080
 #define DEFAULT_STATIC_FILE_PATH "static"

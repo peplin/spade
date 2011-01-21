@@ -5,11 +5,13 @@ void return_client_error(int incoming_socket, char *cause, char* status_code,
 void return_response_headers(int incoming_socket, char* status_code,
         char* message, char* body, char* content_type, int length,
         int close_headers);
-void serve_dynamic(int incoming_socket, char *filename, char *query_string);
+void serve_dynamic(spade_server* server, http_request* request, 
+        int incoming_socket, dynamic_handler* handler);
 void serve_static(spade_server* server, http_request* request,
-        int incoming_socket, char *filename, int filesize);
+        int incoming_socket);
 void handle_get(spade_server* server, int incoming_socket,
         http_request* request);
+void resolve_hostname(char* hostname, struct sockaddr_in* client_address);
 
 /* Initialize socket for proxy server to listen on.
  *
@@ -161,6 +163,11 @@ void receive(receive_args* args) {
     rio_t rio_client;
     rio_readinitb(&rio_client, args->incoming_socket);
     http_request request = read_http_request(&rio_client, args->server);
+    strcpy(request.remote_address, inet_ntoa(args->client_address.sin_addr));
+    if(args->server->do_reverse_lookups) {
+        resolve_hostname(request.remote_host, &args->client_address);
+    }
+
     if(request.message.valid) {
         switch(request.method) {
             case HTTP_METHOD_GET:
@@ -179,49 +186,30 @@ void receive(receive_args* args) {
     close(args->incoming_socket);
 }
 
+void resolve_hostname(char* hostname, struct sockaddr_in* client_address) {
+    struct hostent *host_entry;
+    if (NULL == (host_entry = gethostbyaddr(
+            (char*) &client_address->sin_addr, sizeof(struct in_addr),
+            AF_INET))) {
+        log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_WARN,
+                "Unable to resolve hostname for %s (errno %d)", 
+                client_address->sin_addr, h_errno);
+    } else {
+        strcpy(hostname, host_entry->h_name);
+    }
+}
+
 void handle_get(spade_server* server, int incoming_socket,
         http_request* request) {
-    struct stat sbuf;
-    char file_path[MAX_PATH_LENGTH];
-
     for (int i = 0; i < server->handler_count; i++) {
-        sprintf(file_path, "%s/%s", server->dynamic_file_path,
-                server->handlers[i].handler);
-        stat(file_path, &sbuf);
-        if(!strcmp(server->handlers[i].path, request->uri.path)) {
-            if(!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) {
-                return_client_error(incoming_socket, request->uri.path, "403",
-                        "Forbidden", "Spade couldn't run the CGI program");
-                return;
-            }
-            serve_dynamic(incoming_socket, file_path,
-                    request->uri.query_string);
+        if(!strncmp(server->handlers[i].path, request->uri.path, 
+                    strlen(server->handlers[i].path))) {
+            serve_dynamic(server, request, incoming_socket, 
+                    &server->handlers[i]);
             return;
         }
     }
-
-    sprintf(file_path, "%s/%s", server->static_file_path, request->uri.path);
-    if(stat(file_path, &sbuf) < 0) {
-        return_client_error(incoming_socket, request->uri.path, "404",
-                "Not found", "Spade couldn't find this file");
-        return;
-    }
-
-    if(S_ISDIR(sbuf.st_mode)) {
-        strcat(file_path, "index.html");
-        if(stat(file_path, &sbuf) < 0) {
-            return_client_error(incoming_socket, request->uri.path, "404",
-                    "Not found", "Spade couldn't find this file");
-            return;
-        }
-    }
-
-    if(!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) {
-        return_client_error(incoming_socket, request->uri.path, "403",
-                "Forbidden", "Spade couldn't read the file");
-        return;
-    }
-    serve_static(server, request, incoming_socket, file_path, sbuf.st_size);
+    serve_static(server, request, incoming_socket);
 }
 
 /* Helper function for new threads */
@@ -237,12 +225,17 @@ void run_server(spade_server* server) {
     pthread_t receive_thread;
     signal(SIGPIPE, SIG_IGN);
 
+    struct sockaddr_in client_address;    
+    socklen_t sin_size = sizeof(struct sockaddr_in);
+
     while(1) {
-        int message_socket = accept(server->socket, NULL, NULL);
+        int message_socket = accept(server->socket, 
+                (struct sockaddr *) &client_address, &sin_size);
         if(!check_error(message_socket, "accept")) {
             receive_args* receive_args = malloc(sizeof(receive_args));
             receive_args->server = server;
             receive_args->incoming_socket = message_socket;
+            receive_args->client_address = client_address;
             pthread_create(&receive_thread, &server->thread_attr,
                     receive_helper, (void*) receive_args);
         }
@@ -281,8 +274,34 @@ void register_handler(spade_server* server, const char* path,
  * serve_static - copy a file back to the client
  */
 void serve_static(spade_server* server, http_request* request, 
-        int incoming_socket, char *filename, int filesize) {
-    int file_descriptor = open(filename, O_RDONLY, 0);
+        int incoming_socket) {
+
+    char file_path[MAX_PATH_LENGTH];
+    sprintf(file_path, "%s/%s", server->static_file_path, request->uri.path);
+
+    struct stat sbuf;
+    if(stat(file_path, &sbuf) < 0) {
+        return_client_error(incoming_socket, request->uri.path, "404",
+                "Not found", "Spade couldn't find this file");
+        return;
+    }
+
+    if(S_ISDIR(sbuf.st_mode)) {
+        strcat(file_path, "index.html");
+        if(stat(file_path, &sbuf) < 0) {
+            return_client_error(incoming_socket, request->uri.path, "404",
+                    "Not found", "Spade couldn't find this file");
+            return;
+        }
+    }
+
+    if(!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) {
+        return_client_error(incoming_socket, request->uri.path, "403",
+                "Forbidden", "Spade couldn't read the file");
+        return;
+    }
+
+    int file_descriptor = open(file_path, O_RDONLY, 0);
     if(check_error(file_descriptor, "serve_static")) {
         return_client_error(incoming_socket, strerror(errno), "500",
                 "Internal Server Error", "Spade crashed and burned.");
@@ -290,34 +309,45 @@ void serve_static(spade_server* server, http_request* request,
     }
 
     char content_type[MAXLINE];
-    get_filetype(filename, content_type);
+    get_filetype(file_path, content_type);
     return_response_headers(incoming_socket, "200", "OK", NULL, content_type, 
-            filesize, 1);
+            sbuf.st_size, 1);
 
     /* Send response body to client */
     char *srcp;
-    srcp = mmap(0, filesize, PROT_READ, MAP_PRIVATE, file_descriptor, 0);
+    srcp = mmap(0, sbuf.st_size, PROT_READ, MAP_PRIVATE, file_descriptor, 0);
     close(file_descriptor);
     if(srcp != (void*)-1) {
-        csapp_rio_writen(incoming_socket, srcp, filesize);
-        munmap(srcp, filesize);
+        csapp_rio_writen(incoming_socket, srcp, sbuf.st_size);
+        munmap(srcp, sbuf.st_size);
     }
 }
 
 /*
  * serve_dynamic - run a CGI program on behalf of the client
  */
-void serve_dynamic(int incoming_socket, char *filename, char *query_string) {
-    char *emptylist[] = { NULL };
+void serve_dynamic(spade_server* server, http_request* request,
+        int incoming_socket, dynamic_handler* handler) {
+    char file_path[MAX_PATH_LENGTH];
+    sprintf(file_path, "%s/%s", server->dynamic_file_path, handler->handler);
+
+    struct stat sbuf;
+    stat(file_path, &sbuf);
+    if(!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) {
+        return_client_error(incoming_socket, request->uri.path, "403",
+                "Forbidden", "Spade couldn't run the CGI program");
+        return;
+    }
 
     /* Return first part of HTTP response */
     return_response_headers(incoming_socket, "200", "OK", NULL, NULL, 0, 0);
 
     if(csapp_fork() == 0) { /* child */
-        set_cgi_environment(query_string);
+        set_cgi_environment(server, request, handler);
         /* Redirect stdout to client */
         csapp_dup2(incoming_socket, STDOUT_FILENO);        
-        csapp_execve(filename, emptylist, environ); /* Run CGI program */
+        char *emptylist[] = { NULL };
+        csapp_execve(file_path, emptylist, environ);
     }
     csapp_wait(NULL); /* Parent waits for and reaps child */
 }

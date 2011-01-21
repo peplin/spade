@@ -2,11 +2,9 @@
 #define _HTTP_H_
 
 #include <log4c.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include "csapp.h"
+#include "constants.h"
 
 /**
  * 15-845 Independent Project
@@ -96,6 +94,8 @@ typedef struct {
     http_uri uri;
     int has_host_header;
     http_message message;
+    char remote_host[NI_MAXHOST];
+    char remote_address[MAX_IP_ADDRESS]; // TODO is this the correct limit?
 } http_request;
 
 typedef struct {
