@@ -32,7 +32,7 @@ class GetTests < Test::Unit::TestCase
 
     def test_static_jpg
         assert_same_static '/small.gif'
-        assert_same_static '/small.jpg'
+        assert_same_static '/large.jpg'
     end
 
     def test_dynamic
@@ -41,10 +41,10 @@ class GetTests < Test::Unit::TestCase
     end
 
     def assert_same_static path, filename=nil
-        filename ||= "/test/static/#{path}"
+        filename ||= "tests/static#{path}"
         response = @http.get(path)
         assert_equal "200", response.code
-        assert_equal File.open(filename), response.body
+        assert_equal File.binread(filename), response.body
     end
 
     def assert_same_dynamic path, expected
