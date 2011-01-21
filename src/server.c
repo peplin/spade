@@ -2,7 +2,7 @@
 
 void return_client_error(int incoming_socket, char *cause, char* status_code,
         char *shortmsg, char *longmsg);
-void return_response_headers(int incoming_socket, char* status_code,
+int return_response_headers(int incoming_socket, char* status_code,
         char* message, char* body, char* content_type, int length,
         int close_headers);
 void serve_dynamic(spade_server* server, http_request* request, 
@@ -315,16 +315,15 @@ void serve_static(spade_server* server, http_request* request,
 
     char content_type[MAXLINE];
     get_filetype(file_path, content_type);
-    return_response_headers(incoming_socket, "200", "OK", NULL, content_type, 
-            sbuf.st_size, 1);
-
-    /* Send response body to client */
-    char *srcp;
-    srcp = mmap(0, sbuf.st_size, PROT_READ, MAP_PRIVATE, file_descriptor, 0);
-    close(file_descriptor);
-    if(srcp != (void*)-1) {
-        rio_writen(incoming_socket, srcp, sbuf.st_size);
-        munmap(srcp, sbuf.st_size);
+    if(-1 != return_response_headers(incoming_socket, "200", "OK", NULL, content_type, 
+            sbuf.st_size, 1)) {
+        char *srcp;
+        srcp = mmap(0, sbuf.st_size, PROT_READ, MAP_PRIVATE, file_descriptor, 0);
+        close(file_descriptor);
+        if(srcp != (void*)-1) {
+            rio_writen(incoming_socket, srcp, sbuf.st_size);
+            munmap(srcp, sbuf.st_size);
+        }
     }
 }
 
@@ -344,17 +343,16 @@ void serve_dynamic(spade_server* server, http_request* request,
         return;
     }
 
-    /* Return first part of HTTP response */
-    return_response_headers(incoming_socket, "200", "OK", NULL, NULL, 0, 0);
-
-    if(fork() == 0) { /* child */
-        set_cgi_environment(server, request, handler);
-        /* Redirect stdout to client */
-        dup2(incoming_socket, STDOUT_FILENO);        
-        char *emptylist[] = { NULL };
-        execve(file_path, emptylist, environ);
+    if(-1 != return_response_headers(incoming_socket, "200", "OK", NULL, NULL, 0, 0)) {
+        if(fork() == 0) { /* child */
+            set_cgi_environment(server, request, handler);
+            /* Redirect stdout to client */
+            dup2(incoming_socket, STDOUT_FILENO);        
+            char *emptylist[] = { NULL };
+            execve(file_path, emptylist, environ);
+        }
+        wait(NULL); /* Parent waits for and reaps child */
     }
-    wait(NULL); /* Parent waits for and reaps child */
 }
 
 /*
@@ -376,26 +374,26 @@ void return_client_error(int incoming_socket, char *cause, char *status_code,
             "text/html", 0, 1);
 }
 
-void return_response_headers(int incoming_socket, char* status_code,
+int return_response_headers(int incoming_socket, char* status_code,
         char* message, char* body, char* content_type, int length,
         int close_headers) {
     char buf[MAXLINE];
 
     sprintf(buf, "HTTP/1.0 %s %s\r\n", status_code, message);
-    if(rio_writen(incoming_socket, buf, strlen(buf))) {
+    if(rio_writen(incoming_socket, buf, strlen(buf)) == -1) {
         log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_ERROR,
                 "Couldn't write to socket: %s", strerror(errno));
-        return;
+        return -1;
     }
     strstr(buf, "\r\n")[0] = '\0';
     log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_DEBUG,
             "%s", buf);
 
     sprintf(buf, "Content-Type: %s\r\n", content_type);
-    if(rio_writen(incoming_socket, buf, strlen(buf))) {
+    if(rio_writen(incoming_socket, buf, strlen(buf)) == -1) {
         log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_ERROR,
                 "Couldn't write to socket: %s", strerror(errno));
-        return;
+        return -1;
     }
 
     if(body) {
@@ -403,30 +401,31 @@ void return_response_headers(int incoming_socket, char* status_code,
     }
     if (length != 0) {
         sprintf(buf, "Content-Length: %d\r\n", length);
-        if(rio_writen(incoming_socket, buf, strlen(buf))) {
+        if(rio_writen(incoming_socket, buf, strlen(buf)) == -1) {
             log4c_category_log(log4c_category_get("spade"), 
                     LOG4C_PRIORITY_ERROR, "Couldn't write to socket: %s", 
                     strerror(errno));
-            return;
+            return -1;
         }
     }
 
     if(close_headers) {
         sprintf(buf, "\r\n");
-        if(rio_writen(incoming_socket, buf, strlen(buf))) {
+        if(rio_writen(incoming_socket, buf, strlen(buf)) == -1) {
             log4c_category_log(log4c_category_get("spade"), 
                     LOG4C_PRIORITY_ERROR, "Couldn't write to socket: %s", 
                     strerror(errno));
-            return;
+            return -1;
         }
 
         if (body) {
-            if(rio_writen(incoming_socket, body, strlen(body))) {
+            if(rio_writen(incoming_socket, body, strlen(body)) == -1) {
                 log4c_category_log(log4c_category_get("spade"), 
                         LOG4C_PRIORITY_ERROR, "Couldn't write to socket: %s", 
                         strerror(errno));
-                return;
+                return -1;
             }
         }
     }
+    return 0;
 }
