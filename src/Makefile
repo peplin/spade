@@ -12,7 +12,7 @@ CFLAGS += -ggdb
 
 all: spade
 
-spade: spade.o csapp.o http.o util.o server.o config.o
+spade: spade.o csapp.o http.o util.o server.o config.o cgi.o
 
 clean:
 	rm -f *.o spade *~

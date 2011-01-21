@@ -9,6 +9,7 @@
 #include "csapp.h"
 #include "util.h"
 #include "http.h"
+#include "cgi.h"
 
 #define MAX_CONNECTION_QUEUE 20
 #define MAX_HANDLERS 255

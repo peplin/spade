@@ -5,7 +5,7 @@ void return_client_error(int incoming_socket, char *cause, char* status_code,
 void return_response_headers(int incoming_socket, char* status_code,
         char* message, char* body, char* content_type, int length,
         int close_headers);
-void serve_dynamic(int incoming_socket, char *filename, char *cgiargs);
+void serve_dynamic(int incoming_socket, char *filename, char *query_string);
 void serve_static(spade_server* server, http_request* request,
         int incoming_socket, char *filename, int filesize);
 void handle_get(spade_server* server, int incoming_socket,
@@ -307,15 +307,14 @@ void serve_static(spade_server* server, http_request* request,
 /*
  * serve_dynamic - run a CGI program on behalf of the client
  */
-void serve_dynamic(int incoming_socket, char *filename, char *cgiargs) {
+void serve_dynamic(int incoming_socket, char *filename, char *query_string) {
     char *emptylist[] = { NULL };
 
     /* Return first part of HTTP response */
     return_response_headers(incoming_socket, "200", "OK", NULL, NULL, 0, 0);
 
     if(csapp_fork() == 0) { /* child */
-        /* Real server would set all CGI vars here */
-        setenv("QUERY_STRING", cgiargs, 1);
+        set_cgi_environment(query_string);
         /* Redirect stdout to client */
         csapp_dup2(incoming_socket, STDOUT_FILENO);        
         csapp_execve(filename, emptylist, environ); /* Run CGI program */
