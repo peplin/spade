@@ -194,18 +194,14 @@ char* http_response_to_string(http_response* response, char* buf) {
     return buf;
 }
 
-http_header parse_http_header(char* header) {
-    http_header parsed_header;
-    strncpy(parsed_header.key, "", 1);
-    strncpy(parsed_header.value, "", 1);
-    parsed_header.valid = 1;
-    sscanf(header, 
-            "%"XSTR(MAX_HEADER_KEY_LENGTH)"[^:]: %"XSTR(MAX_HEADER_VALUE_LENGTH)"[^\r\n]", 
-            parsed_header.key, parsed_header.value);
-    if(!strncmp(parsed_header.key, "", 1)) {
-        parsed_header.valid = 0;
-    }
-    return parsed_header;
+void parse_http_header(http_header* header, char* header_string) {
+    // This could do more error checking, but we will assume proper HTTP headers
+    // for now.
+    header->valid = 1;
+    strcpy(header->key, header_string);
+    char* key_value_separator = strchr(header->key, ':');
+    strcpy(header->value, key_value_separator + 2);
+    key_value_separator[0] = '\0';
 }
 
 http_uri parse_http_uri(char* uri) {
@@ -256,9 +252,15 @@ http_request parse_http_request(char* request) {
     version[0] = uri[0] = method[0] = '\0';
     http_request parsed_request;
     parsed_request.message.valid = 1;
-    sscanf(request, 
-            "%"XSTR(MAX_METHOD_LENGTH)"s %"XSTR(MAX_URI_LENGTH)"s %"XSTR(MAX_VERSION_LENGTH)"s", 
-            method, uri, version);
+
+    strncpy(method, request, MAX_METHOD_LENGTH);
+    strchr(method, ' ')[0] = '\0';
+    char* separator = strchr(request, ' ');
+    strncpy(uri, separator + 1, MAXLINE);
+    strchr(uri, ' ')[0] = '\0';
+    separator = strchr(separator + 1, ' ');
+    strcpy(version, separator + 1);
+    version[MAX_VERSION_LENGTH - 1] = '\0';
 
     parsed_request.method = string_to_http_method(method);
     if(parsed_request.method == HTTP_METHOD_NONE) {

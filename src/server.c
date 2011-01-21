@@ -109,9 +109,10 @@ void read_http_headers(rio_t* rio, http_message* message,
     if(rio->rio_cnt) {
         char header_string[MAXLINE];
         int bytes_read = read_line(rio, header_string, server);
+        http_header header;
         while(bytes_read > 0 && header_string[0] != '\n'
                 && header_string[0] != '\r') {
-            http_header header = parse_http_header(header_string);
+            parse_http_header(&header, header_string);
             if(header.valid) {
                 message->headers[message->header_count++] = header;
                 bytes_read = read_line(rio, header_string, server);

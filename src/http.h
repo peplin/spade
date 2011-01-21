@@ -119,10 +119,7 @@ http_method string_to_http_method(char* method);
 char* http_request_to_string(http_request* request, char* buf);
 char* http_response_to_string(http_response* response, char* buf);
 
-/* Parse an http_header from the buffer at header. The valid bit in the returned
- * header will be 0 if a header was not found or it was invalid.
- */
-http_header parse_http_header(char* header);
+void parse_http_header(http_header* header, char* header_string);
 
 /* Parse an http_uri from the buffer at uri. The valid bit in the returned
  * uri will be 0 if a URI was not found or it was invalid.
