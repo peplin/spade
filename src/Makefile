@@ -2,13 +2,11 @@ CC = gcc
 CFLAGS = -Wall -std=c99 -Werror -I src -fmessage-length=80
 LDFLAGS = -lpthread -lev -llog4c -lconfig
 
-#ifdef DEBUG
-#   CFLAGS += -ggdb
-#else
-#   CFLAGS += -O2
-#endif
-
-CFLAGS += -ggdb
+ifdef OPTIMIZED
+   CFLAGS += -O2
+else
+   CFLAGS += -ggdb
+endif
 
 ifdef PROFILE
    LDFLAGS += -pg
