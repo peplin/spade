@@ -10,6 +10,11 @@ LDFLAGS = -lpthread -lev -llog4c -lconfig
 
 CFLAGS += -ggdb
 
+ifdef PROFILE
+   LDFLAGS += -pg
+   CFLAGS += -pg
+endif
+
 all: spade
 
 spade: spade.o csapp.o http.o util.o server.o config.o cgi.o
