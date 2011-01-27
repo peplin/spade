@@ -1,0 +1,27 @@
+Dynamic linking in process with dlopen
+Combile CGI like programs as functions
+Check if .so is already linked before doing it again (or if we have a config,
+preload)
+rewrite adder program as a python cgi script
+
+
+dirtycgi_daemons {
+
+}
+
+dirtcgi_libraries{
+}
+
+
+spawn a pool of subprocesses
+communicate with them through sockets - could be a network socket or simple fd
+application side must spawn threads to handle each request
+read until \r\n\r\n, ennd of env variables
+
+
+
+
+increase accept() limit to avoid CONNRESET
+Best protocol is no protocol - just pass an HTTP request.
+Only set CGI param once unless they change with each request
+Benchmark serving dynamic content, in detail
