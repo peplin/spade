@@ -25,3 +25,8 @@ increase accept() limit to avoid CONNRESET
 Best protocol is no protocol - just pass an HTTP request.
 Only set CGI param once unless they change with each request
 Benchmark serving dynamic content, in detail
+
+2 minute test runs for steady state
+wiat 2 mins in between to clean TIMEWAIT
+
+cat /proc/net/sockstat to see the number waiting
