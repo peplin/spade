@@ -15,7 +15,7 @@
 #include "cgi.h"
 #include "types.h"
 
-#define MAX_CONNECTION_QUEUE 20
+#define MAX_CONNECTION_QUEUE 128
 
 /* Arguments for spawned receiver threads */
 typedef struct {
