@@ -4,7 +4,9 @@ void configure_hostname(spade_server* server, config_t* configuration);
 void configure_port(spade_server* server, unsigned int override_port,
         config_t* configuration);
 void configure_static_file_path(spade_server* server, config_t* configuration);
-void configure_dynamic_file_path(spade_server* server, config_t* configuration);
+void configure_dynamic_file_paths(spade_server* server, config_t* configuration);
+void configure_cgi_file_path(spade_server* server, config_t* configuration);
+void configure_dirt_file_path(spade_server* server, config_t* configuration);
 void configure_dynamic_handlers(spade_server* server, config_t* configuration);
 void configure_cgi_handlers(spade_server* server, config_t* configuration);
 void configure_dirt_handlers(spade_server* server, config_t* configuration);
@@ -31,7 +33,7 @@ int configure_server(spade_server* server, char* configuration_path,
     configure_port(server, override_port, configuration);
     configure_reverse_lookups(server, configuration);
     configure_static_file_path(server, configuration);
-    configure_dynamic_file_path(server, configuration);
+    configure_dynamic_file_paths(server, configuration);
     configure_dynamic_handlers(server, configuration);
 
     config_destroy(configuration);
@@ -84,19 +86,40 @@ void configure_static_file_path(spade_server* server, config_t* configuration) {
     }
 }
 
-void configure_dynamic_file_path(spade_server* server, config_t* configuration) {
-    const char* dynamic_file_path = NULL;
-    if(config_lookup_string(configuration, "dynamic.document_root",
-            &dynamic_file_path)) {
-        strcpy(server->dynamic_file_path, dynamic_file_path);
+void configure_cgi_file_path(spade_server* server, config_t* configuration) {
+    const char* cgi_file_path = NULL;
+    if(config_lookup_string(configuration, "cgi.document_root",
+            &cgi_file_path)) {
+        strcpy(server->cgi_file_path, cgi_file_path);
         log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
                 "Using dynamic file path '%s' from configuration file",
-                server->dynamic_file_path);
+                server->cgi_file_path);
     } else {
-        strcpy(server->dynamic_file_path, DEFAULT_STATIC_FILE_PATH);
+        strcpy(server->cgi_file_path, DEFAULT_CGI_FILE_PATH);
         log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
-                "Using default static file path '%s'", server->static_file_path);
+                "Using default CGI file path '%s'", server->cgi_file_path);
     }
+}
+
+void configure_dirt_file_path(spade_server* server, config_t* configuration) {
+    const char* dirt_file_path = NULL;
+    if(config_lookup_string(configuration, "dirt.document_root",
+            &dirt_file_path)) {
+        strcpy(server->dirt_file_path, dirt_file_path);
+        log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
+                "Using dynamic file path '%s' from configuration file",
+                server->dirt_file_path);
+    } else {
+        strcpy(server->dirt_file_path, DEFAULT_DIRT_FILE_PATH);
+        log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
+                "Using default CGI file path '%s'", server->dirt_file_path);
+    }
+}
+
+void configure_dynamic_file_paths(spade_server* server,
+        config_t* configuration) {
+    configure_cgi_file_path(server, configuration);
+    configure_dirt_file_path(server, configuration);
 }
 
 void configure_dynamic_handlers(spade_server* server, config_t* configuration) {
@@ -106,7 +129,7 @@ void configure_dynamic_handlers(spade_server* server, config_t* configuration) {
 
 void configure_cgi_handlers(spade_server* server, config_t* configuration) {
     config_setting_t* handler_settings = config_lookup(configuration,
-            "dynamic.cgi_handlers");
+            "cgi.handlers");
     int cgi_handler_count = config_setting_length(handler_settings);
 
     for (int n = 0; n < cgi_handler_count; n++) {
@@ -136,7 +159,7 @@ void configure_cgi_handlers(spade_server* server, config_t* configuration) {
 
 void configure_dirt_handlers(spade_server* server, config_t* configuration) {
     config_setting_t* handler_settings = config_lookup(configuration,
-            "dynamic.dirt_handlers");
+            "dirt.handlers");
     if (!handler_settings) {
         log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
                 "No Dirt handlers registered");
@@ -147,13 +170,16 @@ void configure_dirt_handlers(spade_server* server, config_t* configuration) {
     for (int n = 0; n < dirt_handler_count; n++) {
         config_setting_t* handler_setting = config_setting_get_elem(
                 handler_settings, n);
+        const char* library = NULL;
+        config_setting_lookup_string(handler_setting, "library", &library);
+
         const char* handler = NULL;
         config_setting_lookup_string(handler_setting, "handler", &handler);
 
         const char* url = NULL;
         config_setting_lookup_string(handler_setting, "url", &url);
 
-        if(!register_dirt_handler(server, url, handler)) {
+        if(!register_dirt_handler(server, url, handler, library)) {
             log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
                     "Registered Dirt handler '%s' for URL prefix '%s'",
                     handler, url);

@@ -44,6 +44,6 @@ int register_cgi_handler(spade_server* server, const char* path,
         const char* handler_path);
 
 int register_dirt_handler(spade_server* server, const char* path,
-        const char* handler_path);
+        const char* handler_path, const char* library);
 
 #endif // _SERVER_H_

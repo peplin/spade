@@ -252,8 +252,33 @@ void shutdown_server(spade_server* server) {
 }
 
 int register_dirt_handler(spade_server* server, const char* path,
-        const char* handler_path){
-    return -1;
+        const char* handler_path, const char* library){
+    dirt_handler handler;
+    strcpy(handler.path, path);
+    strcpy(handler.handler, handler_path);
+    strcpy(handler.library, library);
+
+    char file_path[MAX_PATH_LENGTH];
+    sprintf(file_path, "%s/%s", server->dirt_file_path, handler.handler);
+
+    struct stat sbuf;
+    if(stat(file_path, &sbuf) < 0) {
+        log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_ERROR,
+                "Couldn't find the handler file '%s' -- not adding handler",
+                file_path);
+        return -1;
+    } else {
+        if(!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) {
+            log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_ERROR,
+                    "Couldn't run the handler file '%s' -- not adding handler",
+                    file_path);
+            return -1;
+        } else {
+            server->dirt_handlers[server->dirt_handler_count] = handler;
+            server->dirt_handler_count++;
+        }
+    }
+    return 0;
 }
 
 int register_cgi_handler(spade_server* server, const char* path,
@@ -263,7 +288,7 @@ int register_cgi_handler(spade_server* server, const char* path,
     strcpy(handler.handler, handler_path);
 
     char file_path[MAX_PATH_LENGTH];
-    sprintf(file_path, "%s/%s", server->dynamic_file_path, handler.handler);
+    sprintf(file_path, "%s/%s", server->cgi_file_path, handler.handler);
 
     struct stat sbuf;
     if(stat(file_path, &sbuf) < 0) {
@@ -343,7 +368,7 @@ void serve_static(spade_server* server, http_request* request,
 void serve_cgi(spade_server* server, http_request* request,
         int incoming_socket, cgi_handler* handler) {
     char file_path[MAX_PATH_LENGTH];
-    sprintf(file_path, "%s/%s", server->dynamic_file_path, handler->handler);
+    sprintf(file_path, "%s/%s", server->cgi_file_path, handler->handler);
 
     struct stat sbuf;
     stat(file_path, &sbuf);
