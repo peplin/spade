@@ -15,7 +15,7 @@ endif
 
 all: spade
 
-spade: spade.o csapp.o http.o util.o server.o config.o cgi.o
+spade: spade.o csapp.o http.o util.o server.o config.o cgi.o dirt.o
 
 clean:
 	rm -f *.o spade *~

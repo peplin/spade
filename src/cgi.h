@@ -8,16 +8,18 @@
 
 #include "http.h"
 #include "constants.h"
-#include "types.h"
-#include "server.h"
 
 #define CGI_VERSION "1.1"
 
-void set_static_cgi_environment(spade_server* server);
-void set_cgi_environment(spade_server* server, http_request* request, 
-        cgi_handler* handler);
+struct spade_server;
 
 typedef struct {
-} cgi_variables;
+    char handler[MAX_HANDLER_PATH_LENGTH];
+    char path[MAX_DYNAMIC_PATH_PREFIX];
+} cgi_handler;
+
+void set_static_cgi_environment(struct spade_server* server);
+void set_cgi_environment(struct spade_server* server, http_request* request, 
+        cgi_handler* handler);
 
 #endif // _CGI_H_

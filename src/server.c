@@ -7,6 +7,8 @@ int return_response_headers(int incoming_socket, char* status_code,
         int close_headers);
 void serve_cgi(spade_server* server, http_request* request, 
         int incoming_socket, cgi_handler* handler);
+void serve_dirt(spade_server* server, http_request* request, 
+        int incoming_socket, dirt_handler* handler);
 void serve_static(spade_server* server, http_request* request,
         int incoming_socket);
 void handle_get(spade_server* server, int incoming_socket,
@@ -217,6 +219,16 @@ void handle_get(spade_server* server, int incoming_socket,
             return;
         }
     }
+
+    for (int i = 0; i < server->dirt_handler_count; i++) {
+        if(!strncmp(server->dirt_handlers[i].path, request->uri.path, 
+                    strlen(server->dirt_handlers[i].path))) {
+            serve_dirt(server, request, incoming_socket, 
+                    &server->dirt_handlers[i]);
+            return;
+        }
+    }
+
     serve_static(server, request, incoming_socket);
 }
 
@@ -270,7 +282,8 @@ int register_dirt_handler(spade_server* server, const char* path,
     } else {
         void* library_handle = dlopen(file_path, RTLD_NOW);
         if (!library_handle) {
-            log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_ERROR,
+            log4c_category_log(log4c_category_get("spade"),
+                    LOG4C_PRIORITY_ERROR,
                     "Couldn't load the shared library '%s' -- not adding handler: %s",
                     file_path, dlerror());
             return -1;
@@ -278,7 +291,8 @@ int register_dirt_handler(spade_server* server, const char* path,
         handler.handler = dlsym(library_handle, function);
         char* error;
         if((error = dlerror()) != NULL) {
-            log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_ERROR,
+            log4c_category_log(log4c_category_get("spade"),
+                    LOG4C_PRIORITY_ERROR,
                     "Couldn't find the function '%s' in the shared library '%s' -- not adding handler: %s",
                     function, file_path, error);
             return -1;
@@ -304,7 +318,8 @@ int register_cgi_handler(spade_server* server, const char* path,
         return -1;
     } else {
         if(!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) {
-            log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_ERROR,
+            log4c_category_log(log4c_category_get("spade"),
+                    LOG4C_PRIORITY_ERROR,
                     "Couldn't run the handler file '%s' -- not adding handler",
                     handler.handler);
             return -1;
@@ -356,15 +371,25 @@ void serve_static(spade_server* server, http_request* request,
 
     char content_type[MAXLINE];
     get_filetype(file_path, content_type);
-    if(-1 != return_response_headers(incoming_socket, "200", "OK", NULL, content_type, 
-            sbuf.st_size, 1)) {
+    if(-1 != return_response_headers(incoming_socket, "200", "OK", NULL,
+                content_type, sbuf.st_size, 1)) {
         char *srcp;
-        srcp = mmap(0, sbuf.st_size, PROT_READ, MAP_PRIVATE, file_descriptor, 0);
+        srcp = mmap(0, sbuf.st_size, PROT_READ, MAP_PRIVATE, file_descriptor,
+                0);
         close(file_descriptor);
         if(srcp != (void*)-1) {
             rio_writen(incoming_socket, srcp, sbuf.st_size);
             munmap(srcp, sbuf.st_size);
         }
+    }
+}
+
+void serve_dirt(spade_server* server, http_request* request, 
+        int incoming_socket, dirt_handler* handler) {
+    if(-1 != return_response_headers(incoming_socket, "200", "OK", NULL, NULL,
+                0, 0)) {
+        (*handler->handler)(incoming_socket,
+                build_dirt_variables(server, request, handler));
     }
 }
 
@@ -381,7 +406,8 @@ void serve_cgi(spade_server* server, http_request* request,
         return;
     }
 
-    if(-1 != return_response_headers(incoming_socket, "200", "OK", NULL, NULL, 0, 0)) {
+    if(-1 != return_response_headers(incoming_socket, "200", "OK", NULL, NULL,
+                0, 0)) {
         if(fork() == 0) { /* child */
             set_cgi_environment(server, request, handler);
             /* Redirect stdout to client */
@@ -432,7 +458,8 @@ int return_response_headers(int incoming_socket, char* status_code,
 
         sprintf(buf, "Content-Type: %s\r\n", content_type);
         if(rio_writen(incoming_socket, buf, strlen(buf)) == -1) {
-            log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_ERROR,
+            log4c_category_log(log4c_category_get("spade"),
+                    LOG4C_PRIORITY_ERROR,
                     "Couldn't write to socket: %s", strerror(errno));
             return -1;
         }
