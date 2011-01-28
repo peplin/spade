@@ -14,6 +14,6 @@
 #define CGI_VERSION "1.1"
 
 void set_cgi_environment(spade_server* server, http_request* request, 
-        dynamic_handler* handler);
+        cgi_handler* handler);
 
 #endif // _CGI_H_

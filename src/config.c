@@ -6,6 +6,8 @@ void configure_port(spade_server* server, unsigned int override_port,
 void configure_static_file_path(spade_server* server, config_t* configuration);
 void configure_dynamic_file_path(spade_server* server, config_t* configuration);
 void configure_dynamic_handlers(spade_server* server, config_t* configuration);
+void configure_cgi_handlers(spade_server* server, config_t* configuration);
+void configure_dirt_handlers(spade_server* server, config_t* configuration);
 void configure_reverse_lookups(spade_server* server, config_t* configuration);
 
 int configure_server(spade_server* server, char* configuration_path,
@@ -98,11 +100,16 @@ void configure_dynamic_file_path(spade_server* server, config_t* configuration) 
 }
 
 void configure_dynamic_handlers(spade_server* server, config_t* configuration) {
-    config_setting_t* handler_settings = config_lookup(configuration,
-            "dynamic.handlers");
-    int handler_count = config_setting_length(handler_settings);
+    configure_cgi_handlers(server, configuration);
+    configure_dirt_handlers(server, configuration);
+}
 
-    for (int n = 0; n < handler_count; n++) {
+void configure_cgi_handlers(spade_server* server, config_t* configuration) {
+    config_setting_t* handler_settings = config_lookup(configuration,
+            "dynamic.cgi_handlers");
+    int cgi_handler_count = config_setting_length(handler_settings);
+
+    for (int n = 0; n < cgi_handler_count; n++) {
         config_setting_t* handler_setting = config_setting_get_elem(
                 handler_settings, n);
         const char* handler = NULL;
@@ -111,17 +118,52 @@ void configure_dynamic_handlers(spade_server* server, config_t* configuration) {
         const char* url = NULL;
         config_setting_lookup_string(handler_setting, "url", &url);
 
-        register_handler(server, url, handler);
+        register_cgi_handler(server, url, handler);
         log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
-                "Registered handler '%s' for URL prefix '%s'", handler, url);
+                "Registered CGI handler '%s' for URL prefix '%s'",
+                handler, url);
     }
-    if (server->handler_count == 0) {
+    if (server->cgi_handler_count == 0) {
         log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
-                "No dynamic URL handlers registered");
+                "No CGI handlers registered");
     } else {
         log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
-                "Registered a total of %d dynamic URL handlers",
-                    server->handler_count);
+                "Registered a total of %d CGI handlers",
+                server->cgi_handler_count);
+    }
+}
+
+void configure_dirt_handlers(spade_server* server, config_t* configuration) {
+    config_setting_t* handler_settings = config_lookup(configuration,
+            "dynamic.dirt_handlers");
+    if (!handler_settings) {
+        log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
+                "No Dirt handlers registered");
+        return;
+    }
+    int dirt_handler_count = config_setting_length(handler_settings);
+
+    for (int n = 0; n < dirt_handler_count; n++) {
+        config_setting_t* handler_setting = config_setting_get_elem(
+                handler_settings, n);
+        const char* handler = NULL;
+        config_setting_lookup_string(handler_setting, "handler", &handler);
+
+        const char* url = NULL;
+        config_setting_lookup_string(handler_setting, "url", &url);
+
+        register_dirt_handler(server, url, handler);
+        log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
+                "Registered Dirt handler '%s' for URL prefix '%s'",
+                handler, url);
+    }
+    if (server->dirt_handler_count == 0) {
+        log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
+                "No Dirt handlers registered");
+    } else {
+        log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
+                "Registered a total of %d Dirt handlers",
+                server->dirt_handler_count);
     }
 }
 

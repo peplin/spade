@@ -1,7 +1,7 @@
 #include "cgi.h"
 
 void set_cgi_environment(spade_server* server, http_request* request,
-        dynamic_handler* handler) {
+        cgi_handler* handler) {
     setenv("SERVER_SOFTWARE", SPADE_SERVER_DESCRIPTOR, 1);
     setenv("SERVER_NAME", server->hostname, 1);
     setenv("GATEWAY_INTERFACE", CGI_VERSION, 1);

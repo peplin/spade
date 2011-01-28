@@ -40,7 +40,10 @@ void run_server(spade_server* server);
 
 void shutdown_server(spade_server* server);
 
-void register_handler(spade_server* server, const char* path,
+void register_cgi_handler(spade_server* server, const char* path,
+        const char* handler_path);
+
+void register_dirt_handler(spade_server* server, const char* path,
         const char* handler_path);
 
 #endif // _SERVER_H_

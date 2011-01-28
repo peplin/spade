@@ -5,8 +5,8 @@ void return_client_error(int incoming_socket, char *cause, char* status_code,
 int return_response_headers(int incoming_socket, char* status_code,
         char* message, char* body, char* content_type, int length,
         int close_headers);
-void serve_dynamic(spade_server* server, http_request* request, 
-        int incoming_socket, dynamic_handler* handler);
+void serve_cgi(spade_server* server, http_request* request, 
+        int incoming_socket, cgi_handler* handler);
 void serve_static(spade_server* server, http_request* request,
         int incoming_socket);
 void handle_get(spade_server* server, int incoming_socket,
@@ -207,11 +207,11 @@ void resolve_hostname(char* hostname, struct sockaddr_in* client_address) {
 
 void handle_get(spade_server* server, int incoming_socket,
         http_request* request) {
-    for (int i = 0; i < server->handler_count; i++) {
-        if(!strncmp(server->handlers[i].path, request->uri.path, 
-                    strlen(server->handlers[i].path))) {
-            serve_dynamic(server, request, incoming_socket, 
-                    &server->handlers[i]);
+    for (int i = 0; i < server->cgi_handler_count; i++) {
+        if(!strncmp(server->cgi_handlers[i].path, request->uri.path, 
+                    strlen(server->cgi_handlers[i].path))) {
+            serve_cgi(server, request, incoming_socket, 
+                    &server->cgi_handlers[i]);
             return;
         }
     }
@@ -251,9 +251,13 @@ void run_server(spade_server* server) {
 void shutdown_server(spade_server* server) {
 }
 
-void register_handler(spade_server* server, const char* path,
+void register_dirt_handler(spade_server* server, const char* path,
         const char* handler_path){
-    dynamic_handler handler;
+}
+
+void register_cgi_handler(spade_server* server, const char* path,
+        const char* handler_path){
+    cgi_handler handler;
     strcpy(handler.path, path);
     strcpy(handler.handler, handler_path);
 
@@ -271,8 +275,8 @@ void register_handler(spade_server* server, const char* path,
                     "Couldn't run the handler file '%s' -- not adding handler",
                     file_path);
         }
-        server->handlers[server->handler_count] = handler;
-        server->handler_count++;
+        server->cgi_handlers[server->cgi_handler_count] = handler;
+        server->cgi_handler_count++;
     }
 }
 
@@ -329,10 +333,10 @@ void serve_static(spade_server* server, http_request* request,
 }
 
 /*
- * serve_dynamic - run a CGI program on behalf of the client
+ * serve_cgi - run a CGI program on behalf of the client
  */
-void serve_dynamic(spade_server* server, http_request* request,
-        int incoming_socket, dynamic_handler* handler) {
+void serve_cgi(spade_server* server, http_request* request,
+        int incoming_socket, cgi_handler* handler) {
     char file_path[MAX_PATH_LENGTH];
     sprintf(file_path, "%s/%s", server->dynamic_file_path, handler->handler);
 
