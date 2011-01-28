@@ -4,8 +4,8 @@ LDFLAGS = -lpthread
 
 all: adder.so
 
-adder.so: adder.o
-	$(CC) -shared -fPIC adder.o -o adder.so
+adder.so: adder.o csapp.o
+	$(CC) -shared -fPIC adder.o csapp.o -o adder.so 
 
 clean:
-	rm -f *~ *.o adder
+	rm -f *~ *.o adder  *.so

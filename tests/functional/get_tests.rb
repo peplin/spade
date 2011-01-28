@@ -35,9 +35,14 @@ class GetTests < Test::Unit::TestCase
         assert_same_static '/large.jpg'
     end
 
-    def test_dynamic
+    def test_cgi
         assert_same_dynamic '/adder?value=1&value=2', "3"
         assert_same_dynamic '/adder?', "0"
+    end
+
+    def test_dirt
+        assert_same_dynamic '/dirty-adder?value=1&value=2', "3"
+        assert_same_dynamic '/dirty-adder?', "0"
     end
 
     def assert_same_static path, filename=nil

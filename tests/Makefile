@@ -7,4 +7,4 @@ all:
 
 clean:
 	rm -f *~ *.o
-	$(MAKE) -C dirt
+	$(MAKE) -C dirt clean

@@ -386,6 +386,8 @@ void serve_static(spade_server* server, http_request* request,
 
 void serve_dirt(spade_server* server, http_request* request, 
         int incoming_socket, dirt_handler* handler) {
+    log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_DEBUG,
+            "Handling request with a Dirt handler");
     if(-1 != return_response_headers(incoming_socket, "200", "OK", NULL, NULL,
                 0, 0)) {
         (*handler->handler)(incoming_socket,
