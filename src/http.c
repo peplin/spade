@@ -234,7 +234,7 @@ http_uri parse_http_uri(char* uri) {
     }
 
     if(parsed_uri.path && parsed_uri.path[0] == '\0') {
-        strncpy(parsed_uri.path, "/", 2);
+        memcpy(parsed_uri.path, "/", 2);
     }
 
     char* query_string_index = strchr(parsed_uri.path, '?');
@@ -253,13 +253,13 @@ http_request parse_http_request(char* request) {
     http_request parsed_request;
     parsed_request.message.valid = 1;
 
-    strncpy(method, request, MAX_METHOD_LENGTH);
+    memcpy(method, request, MAX_METHOD_LENGTH);
     strchr(method, ' ')[0] = '\0';
     char* separator = strchr(request, ' ');
-    strncpy(uri, separator + 1, MAXLINE);
+    memcpy(uri, separator + 1, MAXLINE);
     strchr(uri, ' ')[0] = '\0';
     separator = strchr(separator + 1, ' ');
-    strncpy(version, separator + 1, MAX_VERSION_LENGTH);
+    memcpy(version, separator + 1, MAX_VERSION_LENGTH);
     version[MAX_VERSION_LENGTH - 1] = '\0';
 
     parsed_request.method = string_to_http_method(method);
