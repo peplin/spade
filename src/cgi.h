@@ -13,7 +13,11 @@
 
 #define CGI_VERSION "1.1"
 
+void set_static_cgi_environment(spade_server* server);
 void set_cgi_environment(spade_server* server, http_request* request, 
         cgi_handler* handler);
+
+typedef struct {
+} cgi_variables;
 
 #endif // _CGI_H_

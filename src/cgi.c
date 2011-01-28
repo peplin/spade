@@ -1,7 +1,6 @@
 #include "cgi.h"
 
-void set_cgi_environment(spade_server* server, http_request* request,
-        cgi_handler* handler) {
+void set_static_cgi_environment(spade_server* server) {
     setenv("SERVER_SOFTWARE", SPADE_SERVER_DESCRIPTOR, 1);
     setenv("SERVER_NAME", server->hostname, 1);
     setenv("GATEWAY_INTERFACE", CGI_VERSION, 1);
@@ -10,6 +9,10 @@ void set_cgi_environment(spade_server* server, http_request* request,
     char stringified_port[MAX_PORT_LENGTH]; 
     sprintf(stringified_port, "%d", server->port);
     setenv("SERVER_PORT", stringified_port, 1);
+}
+
+void set_cgi_environment(spade_server* server, http_request* request,
+        cgi_handler* handler) {
     setenv("REQUEST_METHOD", http_method_to_string(request->method), 1);
 
     char extra_path[MAX_PATH_LENGTH];

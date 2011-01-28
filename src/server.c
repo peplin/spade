@@ -71,6 +71,8 @@ int initialize_server(spade_server* server) {
     pthread_attr_setstacksize(&server->thread_attr, 1024*1024);
     pthread_attr_setdetachstate(&server->thread_attr, PTHREAD_CREATE_DETACHED);
 
+    set_static_cgi_environment(server);
+
     if(initialize_listen_socket(server)) {
         return -1;
     }
