@@ -5,13 +5,6 @@ preload)
 rewrite adder program as a python cgi script
 
 
-dirtycgi_daemons {
-
-}
-
-dirtcgi_libraries{
-}
-
 
 spawn a pool of subprocesses
 communicate with them through sockets - could be a network socket or simple fd
@@ -20,8 +13,6 @@ read until \r\n\r\n, ennd of env variables
 
 
 
-
-increase accept() limit to avoid CONNRESET
 Best protocol is no protocol - just pass an HTTP request.
 Only set CGI param once unless they change with each request
 Benchmark serving dynamic content, in detail
