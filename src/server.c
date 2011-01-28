@@ -292,22 +292,19 @@ int register_cgi_handler(spade_server* server, const char* path,
         const char* handler_path){
     cgi_handler handler;
     strcpy(handler.path, path);
-    strcpy(handler.handler, handler_path);
-
-    char file_path[MAX_PATH_LENGTH];
-    sprintf(file_path, "%s/%s", server->cgi_file_path, handler.handler);
+    sprintf(handler.handler, "%s/%s", server->cgi_file_path, handler_path);
 
     struct stat sbuf;
-    if(stat(file_path, &sbuf) < 0) {
+    if(stat(handler.handler, &sbuf) < 0) {
         log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_ERROR,
                 "Couldn't find the handler file '%s' -- not adding handler",
-                file_path);
+                handler.handler);
         return -1;
     } else {
         if(!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) {
             log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_ERROR,
                     "Couldn't run the handler file '%s' -- not adding handler",
-                    file_path);
+                    handler.handler);
             return -1;
         } else {
             server->cgi_handlers[server->cgi_handler_count] = handler;
@@ -374,11 +371,8 @@ void serve_static(spade_server* server, http_request* request,
  */
 void serve_cgi(spade_server* server, http_request* request,
         int incoming_socket, cgi_handler* handler) {
-    char file_path[MAX_PATH_LENGTH];
-    sprintf(file_path, "%s/%s", server->cgi_file_path, handler->handler);
-
     struct stat sbuf;
-    stat(file_path, &sbuf);
+    stat(handler->handler, &sbuf);
     if(!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) {
         return_client_error(incoming_socket, request->uri.path, "403",
                 "Forbidden", "Spade couldn't run the CGI program");
@@ -391,7 +385,7 @@ void serve_cgi(spade_server* server, http_request* request,
             /* Redirect stdout to client */
             dup2(incoming_socket, STDOUT_FILENO);        
             char *emptylist[] = { NULL };
-            execve(file_path, emptylist, environ);
+            execve(handler->handler, emptylist, environ);
         }
         wait(NULL); /* Parent waits for and reaps child */
     }
