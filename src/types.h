@@ -9,8 +9,7 @@ typedef struct {
 } cgi_handler;
 
 typedef struct {
-	char library[MAX_LIBRARY_PATH_LENGTH];
-    char handler[MAX_HANDLER_PATH_LENGTH];
+    void* handler;
     char path[MAX_DYNAMIC_PATH_PREFIX];
 } dirt_handler;
 

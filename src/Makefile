@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -std=c99 -Werror -I src -fmessage-length=80
-LDFLAGS = -lpthread -lev -llog4c -lconfig
+LDFLAGS = -lpthread -lev -llog4c -lconfig -ldl
 
 ifdef OPTIMIZED
    CFLAGS += -O2

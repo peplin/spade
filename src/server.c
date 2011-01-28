@@ -252,26 +252,33 @@ void shutdown_server(spade_server* server) {
 }
 
 int register_dirt_handler(spade_server* server, const char* path,
-        const char* handler_path, const char* library){
+        const char* function, const char* library){
     dirt_handler handler;
     strcpy(handler.path, path);
-    strcpy(handler.handler, handler_path);
-    strcpy(handler.library, library);
 
     char file_path[MAX_PATH_LENGTH];
-    sprintf(file_path, "%s/%s", server->dirt_file_path, handler.handler);
+    sprintf(file_path, "%s/%s", server->dirt_file_path, library);
 
     struct stat sbuf;
     if(stat(file_path, &sbuf) < 0) {
         log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_ERROR,
-                "Couldn't find the handler file '%s' -- not adding handler",
+                "Couldn't find the shared library '%s' -- not adding handler",
                 file_path);
         return -1;
     } else {
-        if(!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) {
+        void* library_handle = dlopen(file_path, RTLD_NOW);
+        if (!library_handle) {
             log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_ERROR,
-                    "Couldn't run the handler file '%s' -- not adding handler",
-                    file_path);
+                    "Couldn't load the shared library '%s' -- not adding handler: %s",
+                    file_path, dlerror());
+            return -1;
+        }
+        handler.handler = dlsym(library_handle, function);
+        char* error;
+        if((error = dlerror()) != NULL) {
+            log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_ERROR,
+                    "Couldn't find the function '%s' in the shared library '%s' -- not adding handler: %s",
+                    function, file_path, error);
             return -1;
         } else {
             server->dirt_handlers[server->dirt_handler_count] = handler;

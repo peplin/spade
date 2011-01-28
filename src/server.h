@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <dlfcn.h>
 
 #include "csapp.h"
 #include "util.h"
