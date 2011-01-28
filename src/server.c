@@ -394,15 +394,15 @@ int return_response_headers(int incoming_socket, char* status_code,
     log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_DEBUG,
             "%s", buf);
 
-    sprintf(buf, "Content-Type: %s\r\n", content_type);
-    if(rio_writen(incoming_socket, buf, strlen(buf)) == -1) {
-        log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_ERROR,
-                "Couldn't write to socket: %s", strerror(errno));
-        return -1;
-    }
-
     if(body) {
         length = (int) strlen(body);
+
+        sprintf(buf, "Content-Type: %s\r\n", content_type);
+        if(rio_writen(incoming_socket, buf, strlen(buf)) == -1) {
+            log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_ERROR,
+                    "Couldn't write to socket: %s", strerror(errno));
+            return -1;
+        }
     }
     if (length != 0) {
         sprintf(buf, "Content-Length: %d\r\n", length);
