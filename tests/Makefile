@@ -3,7 +3,8 @@ CFLAGS = -g -Wall -Werror
 LDFLAGS = -lpthread
 
 all:
+	$(MAKE) -C dirt
 
 clean:
-	rm -f *~ *.o proxy core
-	$(MAKE) -C cgi-bin
+	rm -f *~ *.o
+	$(MAKE) -C dirt

@@ -2,7 +2,6 @@ Dynamic linking in process with dlopen
 Combile CGI like programs as functions
 Check if .so is already linked before doing it again (or if we have a config,
 preload)
-rewrite adder program as a python cgi script
 
 
 
@@ -16,7 +15,6 @@ read until \r\n\r\n, ennd of env variables
 Best protocol is no protocol - just pass an HTTP request.
 Only set CGI param once unless they change with each request
 Benchmark serving dynamic content, in detail
-
 2 minute test runs for steady state
 wiat 2 mins in between to clean TIMEWAIT
 
