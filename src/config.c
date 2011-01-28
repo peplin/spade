@@ -118,10 +118,11 @@ void configure_cgi_handlers(spade_server* server, config_t* configuration) {
         const char* url = NULL;
         config_setting_lookup_string(handler_setting, "url", &url);
 
-        register_cgi_handler(server, url, handler);
-        log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
-                "Registered CGI handler '%s' for URL prefix '%s'",
-                handler, url);
+        if(!register_cgi_handler(server, url, handler)) {
+            log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
+                    "Registered CGI handler '%s' for URL prefix '%s'",
+                    handler, url);
+        }
     }
     if (server->cgi_handler_count == 0) {
         log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
@@ -152,10 +153,11 @@ void configure_dirt_handlers(spade_server* server, config_t* configuration) {
         const char* url = NULL;
         config_setting_lookup_string(handler_setting, "url", &url);
 
-        register_dirt_handler(server, url, handler);
-        log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
-                "Registered Dirt handler '%s' for URL prefix '%s'",
-                handler, url);
+        if(!register_dirt_handler(server, url, handler)) {
+            log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
+                    "Registered Dirt handler '%s' for URL prefix '%s'",
+                    handler, url);
+        }
     }
     if (server->dirt_handler_count == 0) {
         log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
