@@ -9,7 +9,7 @@
     </config>
 
     <category name="root" priority="notice"/>
-    <category name="spade" priority="debug" appender="stdout" />
+    <category name="spade" priority="debug" appender="syslog" />
 
     <appender name="stdout" type="stream" layout="dated"/>
     <appender name="stderr" type="stream" layout="dated"/>

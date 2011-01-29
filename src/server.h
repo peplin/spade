@@ -16,7 +16,7 @@
 #include "cgi.h"
 #include "dirt.h"
 
-#define MAX_CONNECTION_QUEUE 128
+#define MAX_CONNECTION_QUEUE 3000
 
 /* Struct to hold server-wide settings and variables */
 typedef struct spade_server {
