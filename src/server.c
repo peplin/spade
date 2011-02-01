@@ -5,9 +5,9 @@ void return_client_error(int incoming_socket, char *cause, char* status_code,
 int return_response_headers(int incoming_socket, char* status_code,
         char* message, char* body, char* content_type, int length,
         int close_headers);
-void serve_cgi(spade_server* server, http_request* request, 
+void serve_cgi(spade_server* server, http_request* request,
         int incoming_socket, cgi_handler* handler);
-void serve_dirt(spade_server* server, http_request* request, 
+void serve_dirt(spade_server* server, http_request* request,
         int incoming_socket, dirt_handler* handler);
 void serve_static(spade_server* server, http_request* request,
         int incoming_socket);
@@ -202,7 +202,7 @@ void resolve_hostname(char* hostname, struct sockaddr_in* client_address) {
             (char*) &client_address->sin_addr, sizeof(struct in_addr),
             AF_INET))) {
         log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_WARN,
-                "Unable to resolve hostname for %s (errno %d)", 
+                "Unable to resolve hostname for %s (errno %d)",
                 client_address->sin_addr, h_errno);
     } else {
         strcpy(hostname, host_entry->h_name);
@@ -212,18 +212,20 @@ void resolve_hostname(char* hostname, struct sockaddr_in* client_address) {
 void handle_get(spade_server* server, int incoming_socket,
         http_request* request) {
     for (int i = 0; i < server->cgi_handler_count; i++) {
-        if(!strncmp(server->cgi_handlers[i].path, request->uri.path, 
-                    strlen(server->cgi_handlers[i].path))) {
-            serve_cgi(server, request, incoming_socket, 
+        if(!strcmp(server->cgi_handlers[i].path, request->uri.path)) {
+            log4c_category_log(log4c_category_get("spade"),
+                    LOG4C_PRIORITY_DEBUG,
+                    "Serving request for path '%s' with CGI handler %s'",
+                    request->uri.path, server->cgi_handlers[i].handler);
+            serve_cgi(server, request, incoming_socket,
                     &server->cgi_handlers[i]);
             return;
         }
     }
 
     for (int i = 0; i < server->dirt_handler_count; i++) {
-        if(!strncmp(server->dirt_handlers[i].path, request->uri.path, 
-                    strlen(server->dirt_handlers[i].path))) {
-            serve_dirt(server, request, incoming_socket, 
+        if(!strcmp(server->dirt_handlers[i].path, request->uri.path)) {
+            serve_dirt(server, request, incoming_socket,
                     &server->dirt_handlers[i]);
             return;
         }
@@ -245,11 +247,11 @@ void run_server(spade_server* server) {
     pthread_t receive_thread;
     signal(SIGPIPE, SIG_IGN);
 
-    struct sockaddr_in client_address;    
+    struct sockaddr_in client_address;
     socklen_t sin_size = sizeof(struct sockaddr_in);
 
     while(1) {
-        int message_socket = accept(server->socket, 
+        int message_socket = accept(server->socket,
                 (struct sockaddr *) &client_address, &sin_size);
         if(!check_error(message_socket, "accept")) {
             receive_args* args = malloc(sizeof(receive_args));
@@ -334,7 +336,7 @@ int register_cgi_handler(spade_server* server, const char* path,
 /*
  * serve_static - copy a file back to the client
  */
-void serve_static(spade_server* server, http_request* request, 
+void serve_static(spade_server* server, http_request* request,
         int incoming_socket) {
 
     char file_path[MAX_PATH_LENGTH];
@@ -384,7 +386,7 @@ void serve_static(spade_server* server, http_request* request,
     }
 }
 
-void serve_dirt(spade_server* server, http_request* request, 
+void serve_dirt(spade_server* server, http_request* request,
         int incoming_socket, dirt_handler* handler) {
     log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_DEBUG,
             "Handling request with a Dirt handler");
@@ -413,7 +415,7 @@ void serve_cgi(spade_server* server, http_request* request,
         if(fork() == 0) { /* child */
             set_cgi_environment(server, request, handler);
             /* Redirect stdout to client */
-            dup2(incoming_socket, STDOUT_FILENO);        
+            dup2(incoming_socket, STDOUT_FILENO);
             char *emptylist[] = { NULL };
             execve(handler->handler, emptylist, environ);
         }
@@ -436,7 +438,7 @@ void return_client_error(int incoming_socket, char *cause, char *status_code,
     sprintf(body, "%s<hr><em>The Spade Web server</em>\r\n", body);
 
     // TODO if the dynamic process doesn't close the headers, should we?
-    return_response_headers(incoming_socket, status_code, short_message, body, 
+    return_response_headers(incoming_socket, status_code, short_message, body,
             "text/html", 0, 1);
 }
 
@@ -469,8 +471,8 @@ int return_response_headers(int incoming_socket, char* status_code,
     if (length != 0) {
         sprintf(buf, "Content-Length: %d\r\n", length);
         if(rio_writen(incoming_socket, buf, strlen(buf)) == -1) {
-            log4c_category_log(log4c_category_get("spade"), 
-                    LOG4C_PRIORITY_ERROR, "Couldn't write to socket: %s", 
+            log4c_category_log(log4c_category_get("spade"),
+                    LOG4C_PRIORITY_ERROR, "Couldn't write to socket: %s",
                     strerror(errno));
             return -1;
         }
@@ -479,16 +481,16 @@ int return_response_headers(int incoming_socket, char* status_code,
     if(close_headers) {
         sprintf(buf, "\r\n");
         if(rio_writen(incoming_socket, buf, strlen(buf)) == -1) {
-            log4c_category_log(log4c_category_get("spade"), 
-                    LOG4C_PRIORITY_ERROR, "Couldn't write to socket: %s", 
+            log4c_category_log(log4c_category_get("spade"),
+                    LOG4C_PRIORITY_ERROR, "Couldn't write to socket: %s",
                     strerror(errno));
             return -1;
         }
 
         if (body) {
             if(rio_writen(incoming_socket, body, strlen(body)) == -1) {
-                log4c_category_log(log4c_category_get("spade"), 
-                        LOG4C_PRIORITY_ERROR, "Couldn't write to socket: %s", 
+                log4c_category_log(log4c_category_get("spade"),
+                        LOG4C_PRIORITY_ERROR, "Couldn't write to socket: %s",
                         strerror(errno));
                 return -1;
             }
