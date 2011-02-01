@@ -17,6 +17,10 @@ It also requires zeromq 2.0.10 or greater. You can get that from this Ubuntu PPA
     $ sudo apt-get update
     $ sudo apt-get install libzmq-dev
 
+For testing, you need the test/unit Ruby gem.
+
+    $ [sudo] gem install test-unit
+
 ## Benchmarking Setup
 
     $ sysctl -w fs.file-max=128000 

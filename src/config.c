@@ -19,9 +19,8 @@ int configure_server(spade_server* server, char* configuration_path,
     config_t configuration_struct, *configuration;
     configuration = &configuration_struct;
     config_init(configuration);
- 
+
     if (!config_read_file(configuration, configuration_path)) {
-        // TODO why are these undefined?
         log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_ERROR,
                 "Configuration error: %s:%d - %s",
                 configuration_path,
