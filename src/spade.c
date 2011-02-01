@@ -1,4 +1,4 @@
-/* simple libev-based http server */
+/* simple threaded http server */
 
 #include "spade.h"
 

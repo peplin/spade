@@ -3,15 +3,13 @@ spade - a tiny concurrent web server for dynamic content
 
 ## Dependencies
 
-* libev
 * libpthread
 * log4c
-* check
 * libconfig
 
 To install everything in Ubuntu:
 
-    $ sudo apt-get install libev-dev liblog4c-dev check libconfig-dev
+    $ sudo apt-get install liblog4c-dev libconfig-dev
 
 ## Acknowledgements
 
