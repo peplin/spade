@@ -17,6 +17,15 @@ It also requires zeromq 2.0.10 or greater. You can get that from this Ubuntu PPA
     $ sudo apt-get update
     $ sudo apt-get install libzmq-dev
 
+## Benchmarking Setup
+
+    $ sysctl -w fs.file-max=128000 
+    $ sysctl -w net.ipv4.tcp_keepalive_time=300
+    $ sysctl -w net.core.somaxconn=250000
+    $ sysctl -w net.ipv4.tcp_max_syn_backlog=2500 
+    $ sysctl -w net.core.netdev_max_backlog=2500
+    $ ulimit -n 65535
+
 ## Acknowledgements
 
 This web server was initially based on Dave O'Hallaron's Tiny Web server,
