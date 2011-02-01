@@ -20,7 +20,7 @@
 #include "clay.h"
 
 #define MAX_CONNECTION_QUEUE 3000
-#define ZMQ_THREAD_POOL_SIZE 4
+#define ZMQ_THREAD_POOL_SIZE 10
 
 /* Struct to hold server-wide settings and variables */
 typedef struct spade_server {

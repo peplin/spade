@@ -36,7 +36,7 @@ int main(void) {
     zmq_msg_t msg;
     zmq_msg_init (&msg);
 
-    void* zmq_context = zmq_init(2);
+    void* zmq_context = zmq_init(10);
     void* socket = zmq_socket(zmq_context, ZMQ_PAIR);
     int rc = zmq_connect(socket, "ipc:///tmp/adder.sock");
     clay_variables variables;
