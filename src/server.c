@@ -297,6 +297,7 @@ void* clay_receive_helper(void* socket) {
         memcpy(&response, zmq_msg_data(&msg), zmq_msg_size(&msg));
         rio_writen(response.incoming_socket, response.response,
                 response.response_length);
+        close(response.incoming_socket);
         zmq_msg_close(&msg);
     }
 
