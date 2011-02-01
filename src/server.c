@@ -9,7 +9,7 @@ void serve_cgi(spade_server* server, http_request* request,
         int incoming_socket, cgi_handler* handler);
 void serve_dirt(spade_server* server, http_request* request,
         int incoming_socket, dirt_handler* handler);
-void serve_clay(spade_server* server, http_request* request,
+int serve_clay(spade_server* server, http_request* request,
         int incoming_socket, clay_handler* handler);
 void serve_static(spade_server* server, http_request* request,
         int incoming_socket);
@@ -240,9 +240,8 @@ int handle_get(spade_server* server, int incoming_socket,
 
     for (int i = 0; i < server->clay_handler_count; i++) {
         if(!strcmp(server->clay_handlers[i].path, request->uri.path)) {
-            serve_clay(server, request, incoming_socket,
+            return serve_clay(server, request, incoming_socket,
                     &server->clay_handlers[i]);
-            return 0;
         }
     }
 
@@ -476,7 +475,7 @@ void free_data(void* data, void* hint) {
     }
 }
 
-void serve_clay(spade_server* server, http_request* request,
+int serve_clay(spade_server* server, http_request* request,
         int incoming_socket, clay_handler* handler) {
     log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_DEBUG,
             "Handling request with a Clay handler");
@@ -491,6 +490,10 @@ void serve_clay(spade_server* server, http_request* request,
             log4c_category_log(log4c_category_get("spade"),
                     LOG4C_PRIORITY_ERROR,
                     "Failed to initialize 0mq message to send.");
+            return_client_error(incoming_socket, request->uri.path, "503",
+                    "Service unavailable",
+                    "Spade couldn't connect to the Clay daemon");
+            return -1;
         }
 
         void* data = malloc(sizeof(variables));
@@ -499,20 +502,33 @@ void serve_clay(spade_server* server, http_request* request,
                     LOG4C_PRIORITY_ERROR,
                     "Unable to malloc space for the message data: %s",
                     strerror(errno));
+            return_client_error(incoming_socket, request->uri.path, "503",
+                    "Service unavailable",
+                    "Spade couldn't connect to the Clay daemon");
+            return -1;
         }
         memcpy(data, &variables, sizeof(variables));
         if(0 != (rc = zmq_msg_init_data(&msg, data, sizeof(variables),
                         free_data, data))) {
             log4c_category_log(log4c_category_get("spade"),
                     LOG4C_PRIORITY_ERROR, "Failed to init 0mq message data.");
+            return_client_error(incoming_socket, request->uri.path, "503",
+                    "Service unavailable",
+                    "Spade couldn't connect to the Clay daemon");
+            return -1;
         }
 
         if(0 != (rc = zmq_send(handler->socket, &msg, 0))) {
             log4c_category_log(log4c_category_get("spade"),
                     LOG4C_PRIORITY_ERROR,
                     "Failed to deliver 0mq message to handler.");
+            return_client_error(incoming_socket, request->uri.path, "503",
+                "Service unavailable",
+                "Spade couldn't connect to the Clay daemon");
+            return -1;
         }
     }
+    return 0;
 }
 
 /*
