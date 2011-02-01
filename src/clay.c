@@ -1,9 +1,10 @@
-#include "dirt.h"
+#include "clay.h"
 #include "server.h"
 
-dirt_variables build_dirt_variables(spade_server* server, http_request* request,
-        dirt_handler* handler) {
-    dirt_variables variables;
+clay_variables build_clay_variables(spade_server* server, http_request* request,
+        clay_handler* handler, int incoming_socket) {
+    clay_variables variables;
+    variables.incoming_socket = incoming_socket;
 
     strcpy(variables.server_software, SPADE_SERVER_DESCRIPTOR);
     strcpy(variables.server_name, server->hostname);

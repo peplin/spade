@@ -11,6 +11,12 @@ To install everything in Ubuntu:
 
     $ sudo apt-get install liblog4c-dev libconfig-dev
 
+It also requires zeromq 2.0.10 or greater. You can get that from this Ubuntu PPA:
+
+    $ sudo add-apt-repository ppa:chris-lea/zeromq 
+    $ sudo apt-get update
+    $ sudo apt-get install libzmq-dev
+
 ## Acknowledgements
 
 This web server was initially based on Dave O'Hallaron's Tiny Web server,

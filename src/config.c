@@ -4,12 +4,14 @@ void configure_hostname(spade_server* server, config_t* configuration);
 void configure_port(spade_server* server, unsigned int override_port,
         config_t* configuration);
 void configure_static_file_path(spade_server* server, config_t* configuration);
-void configure_dynamic_file_paths(spade_server* server, config_t* configuration);
+void configure_dynamic_file_paths(spade_server* server,
+        config_t* configuration);
 void configure_cgi_file_path(spade_server* server, config_t* configuration);
 void configure_dirt_file_path(spade_server* server, config_t* configuration);
 void configure_dynamic_handlers(spade_server* server, config_t* configuration);
 void configure_cgi_handlers(spade_server* server, config_t* configuration);
 void configure_dirt_handlers(spade_server* server, config_t* configuration);
+void configure_clay_handlers(spade_server* server, config_t* configuration);
 void configure_reverse_lookups(spade_server* server, config_t* configuration);
 
 int configure_server(spade_server* server, char* configuration_path,
@@ -82,7 +84,8 @@ void configure_static_file_path(spade_server* server, config_t* configuration) {
     } else {
         strcpy(server->static_file_path, DEFAULT_STATIC_FILE_PATH);
         log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
-                "Using default static file path '%s'", server->static_file_path);
+                "Using default static file path '%s'",
+                server->static_file_path);
     }
 }
 
@@ -125,6 +128,7 @@ void configure_dynamic_file_paths(spade_server* server,
 void configure_dynamic_handlers(spade_server* server, config_t* configuration) {
     configure_cgi_handlers(server, configuration);
     configure_dirt_handlers(server, configuration);
+    configure_clay_handlers(server, configuration);
 }
 
 void configure_cgi_handlers(spade_server* server, config_t* configuration) {
@@ -192,6 +196,41 @@ void configure_dirt_handlers(spade_server* server, config_t* configuration) {
         log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
                 "Registered a total of %d Dirt handlers",
                 server->dirt_handler_count);
+    }
+}
+
+void configure_clay_handlers(spade_server* server, config_t* configuration) {
+    config_setting_t* handler_settings = config_lookup(configuration,
+            "clay.handlers");
+    if (!handler_settings) {
+        log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
+                "No Clay handlers registered");
+        return;
+    }
+    int clay_handler_count = config_setting_length(handler_settings);
+
+    for (int n = 0; n < clay_handler_count; n++) {
+        config_setting_t* handler_setting = config_setting_get_elem(
+                handler_settings, n);
+        const char* endpoint = NULL;
+        config_setting_lookup_string(handler_setting, "endpoint", &endpoint);
+
+        const char* url = NULL;
+        config_setting_lookup_string(handler_setting, "url", &url);
+
+        if(!register_clay_handler(server, url, endpoint)) {
+            log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
+                    "Registered Clay handler for URL prefix '%s' at endpoint %s",
+                    url, endpoint);
+        }
+    }
+    if (server->clay_handler_count == 0) {
+        log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
+                "No Clay handlers registered");
+    } else {
+        log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
+                "Registered a total of %d Clay handlers",
+                server->clay_handler_count);
     }
 }
 

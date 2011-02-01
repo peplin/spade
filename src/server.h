@@ -9,14 +9,19 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <dlfcn.h>
+#include <unistd.h>
+#include <zmq.h>
 
+#include "debug.h"
 #include "csapp.h"
 #include "util.h"
 #include "http.h"
 #include "cgi.h"
 #include "dirt.h"
+#include "clay.h"
 
 #define MAX_CONNECTION_QUEUE 3000
+#define ZMQ_THREAD_POOL_SIZE 4
 
 /* Struct to hold server-wide settings and variables */
 typedef struct spade_server {
@@ -32,6 +37,9 @@ typedef struct spade_server {
     cgi_handler cgi_handlers[MAX_HANDLERS];
     unsigned int dirt_handler_count;
     dirt_handler dirt_handlers[MAX_HANDLERS];
+    unsigned int clay_handler_count;
+    clay_handler clay_handlers[MAX_HANDLERS];
+    void* zmq_context;
 } spade_server;
 
 
@@ -63,5 +71,8 @@ int register_cgi_handler(spade_server* server, const char* path,
 
 int register_dirt_handler(spade_server* server, const char* path,
         const char* handler_path, const char* library);
+
+int register_clay_handler(spade_server* server, const char* path,
+        const char* endpoint);
 
 #endif // _SERVER_H_

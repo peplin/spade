@@ -1,5 +1,8 @@
 #include "server.h"
 
+// TODO rework zmq stuff to not use the logging from the example code
+FILE* LOG_FILE = NULL;
+
 void return_client_error(int incoming_socket, char *cause, char* status_code,
         char *shortmsg, char *longmsg);
 int return_response_headers(int incoming_socket, char* status_code,
@@ -9,6 +12,8 @@ void serve_cgi(spade_server* server, http_request* request,
         int incoming_socket, cgi_handler* handler);
 void serve_dirt(spade_server* server, http_request* request,
         int incoming_socket, dirt_handler* handler);
+void serve_clay(spade_server* server, http_request* request,
+        int incoming_socket, clay_handler* handler);
 void serve_static(spade_server* server, http_request* request,
         int incoming_socket);
 void handle_get(spade_server* server, int incoming_socket,
@@ -173,7 +178,8 @@ void receive(receive_args* args) {
     rio_t rio_client;
     rio_readinitb(&rio_client, args->incoming_socket);
     http_request request = read_http_request(&rio_client, args->server);
-    //strcpy(request.remote_address, inet_ntoa(args->client_address.sin_addr));
+    request.remote_host[0] = '\0';
+    request.remote_address[0] = '\0';
     if(args->server->do_reverse_lookups) {
         resolve_hostname(request.remote_host, &args->client_address);
     }
@@ -231,6 +237,14 @@ void handle_get(spade_server* server, int incoming_socket,
         }
     }
 
+    for (int i = 0; i < server->clay_handler_count; i++) {
+        if(!strcmp(server->clay_handlers[i].path, request->uri.path)) {
+            serve_clay(server, request, incoming_socket,
+                    &server->clay_handlers[i]);
+            return;
+        }
+    }
+
     serve_static(server, request, incoming_socket);
 }
 
@@ -265,6 +279,42 @@ void run_server(spade_server* server) {
 }
 
 void shutdown_server(spade_server* server) {
+}
+
+int register_clay_handler(spade_server* server, const char* path,
+        const char* endpoint){
+    clay_handler handler;
+    strcpy(handler.path, path);
+    strcpy(handler.endpoint, endpoint);
+
+    if(server->zmq_context == NULL) {
+        server->zmq_context = zmq_init(ZMQ_THREAD_POOL_SIZE);
+    }
+
+    if(NULL == (handler.send_socket =
+                zmq_socket(server->zmq_context, ZMQ_PAIR))) {
+        log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_WARN,
+                "Failed to create socket for context %s: %s",
+                server->zmq_context, clean_errno());
+        return -1;
+    }
+
+    log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_INFO,
+            "Binding handler PAIR socket %s with identity: %s",
+            handler.send_socket, handler.endpoint);
+
+    int rc = zmq_bind(handler.send_socket, handler.endpoint);
+    while(rc != 0) {
+        sleep(1);
+        log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_WARN,
+                "Failed to bind send socket trying again for %s: %s",
+                handler.endpoint, clean_errno());
+        rc = zmq_bind(handler.send_socket, handler.endpoint);
+    }
+
+    server->clay_handlers[server->clay_handler_count] = handler;
+    server->clay_handler_count++;
+    return 0;
 }
 
 int register_dirt_handler(spade_server* server, const char* path,
@@ -395,6 +445,58 @@ void serve_dirt(spade_server* server, http_request* request,
         (*handler->handler)(incoming_socket,
                 build_dirt_variables(server, request, handler));
     }
+}
+
+void free_data(void* data, void* hint) {
+    if(hint) {
+        free(hint);
+    }
+}
+
+void serve_clay(spade_server* server, http_request* request,
+        int incoming_socket, clay_handler* handler) {
+    log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_DEBUG,
+            "Handling request with a Clay handler");
+    int rc = 0;
+    zmq_msg_t *msg = calloc(sizeof(zmq_msg_t), 1);
+    if(-1 != return_response_headers(incoming_socket, "200", "OK", NULL, NULL,
+                0, 0)) {
+        clay_variables variables = build_clay_variables(server, request,
+                handler, incoming_socket);
+
+        if(0 != (rc = zmq_msg_init(msg))) {
+            log4c_category_log(log4c_category_get("spade"),
+                    LOG4C_PRIORITY_ERROR,
+                    "Failed to initialize 0mq message to send.");
+            check(rc == 0, "ZeroMQ problem.");
+        }
+
+        void* data = malloc(sizeof(variables));
+        // TODO check that this is allocated
+        memcpy(data, &variables, sizeof(variables));
+        if(0 != (rc = zmq_msg_init_data(msg, data, sizeof(variables), free_data,
+                        data))) {
+            log4c_category_log(log4c_category_get("spade"),
+                    LOG4C_PRIORITY_ERROR, "Failed to init 0mq message data.");
+            check(rc == 0, "ZeroMQ problem.");
+        }
+
+        if(0 != (rc = zmq_send(handler->send_socket, msg, 0))) {
+            log4c_category_log(log4c_category_get("spade"),
+                    LOG4C_PRIORITY_ERROR,
+                    "Failed to deliver 0mq message to handler.");
+            check(rc == 0, "ZeroMQ problem.");
+        }
+
+        if(msg) {
+            free(msg);
+            msg = NULL;
+        }
+    }
+error:
+    // TODO: confirm what if this is the right shutdown
+    if(msg) free(msg);
+    return;
 }
 
 /*
