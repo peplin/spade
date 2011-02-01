@@ -5,22 +5,11 @@
 #include "csapp.h"
 
 int main(void) {
-    char *buf, *p;
-    char arg1[MAXLINE], arg2[MAXLINE], content[MAXLINE];
-    int n1=0, n2=0;
+    int first = 0, second = 0;
+    sscanf(getenv("QUERY_STRING"), "value=%d&value=%d", &first, &second);
 
-    /* Extract the two arguments */
-    if ((buf = getenv("QUERY_STRING")) != NULL) {
-	p = strchr(buf, '&');
-	*p = '\0';
-	strcpy(arg1, buf);
-	strcpy(arg2, p+1);
-	n1 = atoi(arg1);
-	n2 = atoi(arg2);
-    }
-
-    /* Make the response body */
-    sprintf(content, "%d\r\n", n1 + n2);
+    char content[MAXLINE];
+    sprintf(content, "%d\r\n", first + second);
 
     /* Generate the HTTP response */
     printf("Content-Length: %zu\r\n", strlen(content));

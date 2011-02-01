@@ -36,8 +36,8 @@ class GetTests < Test::Unit::TestCase
     end
 
     def test_cgi
-        assert_same_dynamic '/adder?1&2', "3"
-        assert_same_dynamic '/adder?', ""
+        assert_same_dynamic '/adder?value=1&value=2', "3"
+        assert_same_dynamic '/adder?', "0"
     end
 
     def test_cgi_python
