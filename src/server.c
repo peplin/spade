@@ -1,8 +1,5 @@
 #include "server.h"
 
-// TODO rework zmq stuff to not use the logging from the example code
-FILE* LOG_FILE = NULL;
-
 void return_client_error(int incoming_socket, char *cause, char* status_code,
         char *shortmsg, char *longmsg);
 int return_response_headers(int incoming_socket, char* status_code,
@@ -318,7 +315,7 @@ int register_clay_handler(spade_server* server, const char* path,
                 zmq_socket(server->zmq_context, ZMQ_PAIR))) {
         log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_WARN,
                 "Failed to create socket for context %s: %s",
-                server->zmq_context, clean_errno());
+                server->zmq_context, strerror(errno));
         return -1;
     }
 
@@ -331,7 +328,7 @@ int register_clay_handler(spade_server* server, const char* path,
         sleep(1);
         log4c_category_log(log4c_category_get("spade"), LOG4C_PRIORITY_WARN,
                 "Failed to bind send socket trying again for %s: %s",
-                handler.endpoint, clean_errno());
+                handler.endpoint, strerror(errno));
         rc = zmq_bind(handler.socket, handler.endpoint);
     }
 
@@ -497,7 +494,12 @@ void serve_clay(spade_server* server, http_request* request,
         }
 
         void* data = malloc(sizeof(variables));
-        // TODO check that this is allocated
+        if(data == NULL) {
+            log4c_category_log(log4c_category_get("spade"),
+                    LOG4C_PRIORITY_ERROR,
+                    "Unable to malloc space for the message data: %s",
+                    strerror(errno));
+        }
         memcpy(data, &variables, sizeof(variables));
         if(0 != (rc = zmq_msg_init_data(&msg, data, sizeof(variables),
                         free_data, data))) {

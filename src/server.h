@@ -12,7 +12,6 @@
 #include <unistd.h>
 #include <zmq.h>
 
-#include "debug.h"
 #include "csapp.h"
 #include "util.h"
 #include "http.h"
