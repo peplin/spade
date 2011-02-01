@@ -7,12 +7,18 @@ class GetTests < Test::Unit::TestCase
         @server = fork {
           exec 'src/spade -c config/test.cfg -p 8000'
         }
+
+        @clay_adder = fork {
+          exec 'tests/clay/adder'
+        }
+
         sleep 0.1
         @http = Net::HTTP.start('localhost', 8000)
     end
 
     def teardown
         Process.kill("TERM", @server)
+        Process.kill("TERM", @clay_adder)
     end
 
     def test_404
@@ -48,6 +54,11 @@ class GetTests < Test::Unit::TestCase
     def test_dirt
         assert_same_dynamic '/dirty-adder?value=1&value=2', "3"
         assert_same_dynamic '/dirty-adder?', "0"
+    end
+
+    def test_clay
+        assert_same_dynamic '/clay-adder?value=1&value=2', "3"
+        assert_same_dynamic '/clay-adder?', "0"
     end
 
     def assert_same_static path, filename=nil

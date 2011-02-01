@@ -239,6 +239,8 @@ void configure_reverse_lookups(spade_server* server, config_t* configuration) {
     if(config_lookup_int(configuration, "do_reverse_lookups",
             (long int*) &do_reverse_lookups)) {
         server->do_reverse_lookups = do_reverse_lookups;
+    } else {
+        server->do_reverse_lookups = 0;
     }
 
     if (server->do_reverse_lookups) {

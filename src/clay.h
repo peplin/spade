@@ -10,6 +10,7 @@
 
 #define MAX_CLAY_PARAMETER_LENGTH 255
 #define MAX_ENDPOINT 255
+#define MAX_RESPONSE_SIZE 2048
 
 struct spade_server;
 
@@ -28,10 +29,16 @@ typedef struct {
 } clay_variables;
 
 typedef struct {
+    int response_length;
+    char response[MAX_RESPONSE_SIZE];
+    int incoming_socket;
+} clay_response;
+
+typedef struct {
     char path[MAX_DYNAMIC_PATH_PREFIX];
     char endpoint[MAX_ENDPOINT];
-    void* send_socket;
-    void* receive_socket;
+    void* socket;
+    pthread_t receive_thread;
 } clay_handler;
 
 clay_variables build_clay_variables(struct spade_server* server,
