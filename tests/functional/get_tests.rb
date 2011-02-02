@@ -52,8 +52,8 @@ class GetTests < Test::Unit::TestCase
     end
 
     def test_dirt
-        assert_same_dynamic '/dirty-adder?value=1&value=2', "3"
-        assert_same_dynamic '/dirty-adder?', "0"
+        assert_same_dynamic '/dirt-adder?value=1&value=2', "3"
+        assert_same_dynamic '/dirt-adder?', "0"
     end
 
     def test_clay
