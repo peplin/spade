@@ -23,12 +23,17 @@ For testing, you need the test/unit Ruby gem.
 
 ## Benchmarking Setup
 
+Each httperf run and the Spade server was run on a kernel with these settings:
+
     $ sysctl -w fs.file-max=128000 
     $ sysctl -w net.ipv4.tcp_keepalive_time=300
     $ sysctl -w net.core.somaxconn=250000
     $ sysctl -w net.ipv4.tcp_max_syn_backlog=2500 
     $ sysctl -w net.core.netdev_max_backlog=2500
     $ ulimit -n 65535
+
+The output of each httperf run is stored in `tests/httperf/runs`, and a chart
+comparing the results is in `doc`.
 
 ## Acknowledgements
 
