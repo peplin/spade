@@ -18,6 +18,7 @@ void print_help() {
     printf("Options:\n");
     printf(" -p <port>   set the port for the server (default 8080)\n");
     printf(" -s <path>   set the path to static files to serve (default ./static)\n");
+    printf(" -c <path>   set the path to the config file (default config/spade.cfg)\n");
     printf(" -h          display this dialogue\n");
 }
 

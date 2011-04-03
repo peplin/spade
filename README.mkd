@@ -1,6 +1,135 @@
 spade - a tiny concurrent web server for dynamic content
 ========================================================
 
+Spade is an experimental webserver created to become more familiar with methods
+for high performance dynamic content serving. It implements three different
+styles of serving dynamic content:
+
+* Baseline CGI with process forking
+* Dynamically linked applications (in C), the "dirt" method
+* Long-running background processes communicating via
+    [ZeroMQ](http://www.zeromq.org/)
+
+It also will serve static content from a specified directory.
+
+## Building & Running
+
+With the dependencies installed, building is quite simple:
+
+    spade/ $ make
+
+Running the server is simple as well. Check out the flags, which should be
+pretty self explanatory:
+
+    spade/ $ src/spade -h
+    spade - a concurrent web server
+    Christopher Peplin, peplin@cmu.edu
+    Options:
+     -p <port>   set the port for the server (default 8080)
+     -s <path>   set the path to static files to serve (default ./static)
+     -c <path>   set the path to the config file (default config/spade.cfg)
+     -h          display this dialogue
+
+## Configuration
+
+The configuration file (specified with the `-c` flag) uses the libconfig format.
+`config/spade.cfg` uses all of the available options.
+
+### Static Files
+
+In the `static` section, you can specify a root directory to which Spade will
+serve static files. This directory is used if there is no dynamic handler
+registered for the URL.
+
+Sample:
+
+    static = {
+        document_root = "tests/static";
+    };
+
+### CGI
+
+In the `cgi` section, you can specify the root directory in which all CGI
+scripts are stored. The scripts are associated with URLs in the `handlers`
+section. Each item in `handlers` requires the following:
+
+* `handler` - the filename of the CGI script (should be in the CGI
+    `document_root`)
+* `url` - the URL endpoint that will be directed to this CGI script, e.g.
+    `/adder` --> the `adder` script and `/adderpy` ->> the `adder.py` script.
+
+Sample:
+
+    cgi = {
+        document_root = "tests/cgi-bin";
+        handlers = ( { handler = "adder"; url = "adder"; },
+            { handler = "adder.py"; url = "adderpy"; } );
+    };
+
+### Dirt
+
+In the `dirt` section, you can specify the root directory in which all linkable
+C libraries that include dirt handlers are stored. Each item in `handlers`
+requires:
+
+* `library` - the filename of the library to dynamically link
+* `handler` - the name of the function within the library that implements the
+    dirt interface
+* `url` - the URL endpoint that will be directed to this handler
+
+Sample:
+
+    dirt = {
+        document_root = "tests/dirt";
+        handlers = ( { library = "adder.so"; handler = "adder"; url = "dirt-adder"; } );
+    };
+
+
+#### Dirt Interface
+
+A dirt handler is a function that accepts two arguments, an incoming socket file
+descriptor and a `dirt_variables` struct object. This struct is defined in
+dirt.h - its attributes match the CGI spec fairly closely, with a few things
+left out since the server implements `HTTP GET` only.
+
+The handler must **not** close the file descriptor.
+
+Sample handler:
+
+    void adder(int incoming_socket, dirt_variables variables) {
+        ...
+    }
+
+### Clay
+
+In the `clay` section, you can specify clay processes running in the background
+that are ready to accept connections. Each item in `handlers` requires:
+
+* `endpoint` - An address of a ZeroMQ socket - could be TCP, IPC, etc.
+* `url` - the URL endpoint that will be directed to this handler
+
+Sample:
+
+    clay = {
+        handlers = ( { endpoint = "ipc:///tmp/adder.sock"; url = "clay-adder"; } );
+    };
+
+#### Clay Interface
+
+The Clay interface is in theory a bit more flexible than Dirt, because it's not
+in-process with the web server. At the moment, however, the interface involves a
+binary C struct which means that implementing a Clay handler in anything but C
+is a bit of a stretch.
+
+A sample handler is implemented in `tests/clay/adder.c` which listens on a
+ZeroMQ socket, reconstructs a `clay_attributes` struct for each request, and
+passes it to a function (very similar to Dirt at this point). The response is
+returned through the same ZMQ socket (which like dirt, must not be closed by the
+handler), which is shuffled back to the original requester's TCP socket in the
+Spade server instance.
+
+Clay is very experimental, just a proof of concept inspired by Mongrel2.
+
 ## Dependencies
 
 * libpthread
@@ -42,4 +171,5 @@ created at Carnegie Mellon University. It also uses the same csapp library of
 functions as Tiny.
 
 The specification for this web server is also provided by Professor O'Hallaron,
-through the "Internet Services" course at CMU (18-845).
+through the "Internet Services" course at CMU
+([18-845](http://www.ece.cmu.edu/~ece845/)).
